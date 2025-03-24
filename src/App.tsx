@@ -13,9 +13,9 @@ function App() {
         <div className="h-screen bg-gradient-to-br from-blue-400 to-indigo-600 opacity-50" />
       </div>
       <div className="parallax-layer parallax-base">
-        {/* <Hero />
+        <Hero />
         <About />
-        <Skills />
+        {/* <Skills />
         <Projects />
         <Contact />
         <Footer /> */}
