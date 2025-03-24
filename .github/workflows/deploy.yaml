@@ -23,7 +23,7 @@ jobs:
     # Step 3: Sync build files to S3
     - name: Deploy to S3
       run: |
-        aws s3 sync ./dist s3://www.sanjaykumarp.info --acl public-read --delete
+        aws s3 sync ./dist s3://www.sanjaykumarp.info --delete
       env:
         AWS_S3_BUCKET: www.sanjaykumarp.info
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
