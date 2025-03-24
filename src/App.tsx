@@ -15,8 +15,8 @@ function App() {
       <div className="parallax-layer parallax-base">
         <Hero />
         <About />
-        {/* <Skills />
-        <Projects />
+        <Skills />
+        {/* <Projects />
         <Contact />
         <Footer /> */}
       </div>

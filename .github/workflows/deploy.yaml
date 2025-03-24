@@ -20,12 +20,22 @@ jobs:
         npm install
         npm run build
 
-    # Step 3: Sync build files to S3
+    # Step 3: Sync build files to S3 with Cache-Control headers
     - name: Deploy to S3
       run: |
         aws s3 sync ./dist s3://www.sanjaykumarp.info --delete
+        aws s3 cp ./dist/index.html s3://www.sanjaykumarp.info/index.html --metadata-directive REPLACE --cache-control "no-cache, no-store, must-revalidate"
+        aws s3 cp ./dist/assets/ s3://www.sanjaykumarp.info/assets/ --recursive --metadata-directive REPLACE --cache-control "max-age=31536000, public"
       env:
-        AWS_S3_BUCKET: www.sanjaykumarp.info
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: us-east-1
+
+    # Step 4: Invalidate CloudFront cache only for index.html
+    - name: Invalidate CloudFront Cache
+      run: |
+        aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/index.html"
+      env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: us-east-1
