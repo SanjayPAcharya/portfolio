@@ -6,7 +6,7 @@ export default function Hero() {
   return (
     <header className="min-h-screen flex flex-col items-center justify-center text-center bg-gray-50">
       <h1 className="text-4xl font-bold text-gray-900 mb-2">Sanjay Kumar P</h1>
-      <p className="text-lg text-gray-600 mb-4">Software Engineer</p>
+      <p className="text-lg text-gray-600 mb-4">Fullstack Software Engineer</p>
       <div className="flex gap-4 mb-8">
         <SocialLink href="https://github.com" icon={<Github className="w-6 h-6" />} />
         <SocialLink href="https://linkedin.com" icon={<Linkedin className="w-6 h-6" />} />
