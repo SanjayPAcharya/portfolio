@@ -1,23 +1,26 @@
 import React from 'react';
+import Navigation from './components/Navigation';
 import Hero from './components/Hero';
-import Skills from './components/Skills';
+import About from './components/About';
+import Experience from './components/Experience';
+// import Skills from './components/Skills';
 import Projects from './components/Projects';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
 
 function App() {
   return (
-    <div className="parallax">
-      <div className="parallax-layer parallax-back">
-        <div className="h-screen bg-gradient-to-br from-blue-400 to-indigo-600 opacity-50" />
-      </div>
-      <div className="parallax-layer parallax-base">
+    <div>
+      <Navigation />
+      <main>
         <Hero />
-        <Skills />
+        <About />
+        <Experience />
+        {/* <Skills /> */}
         <Projects />
         <Contact />
-        <Footer />
-      </div>
+      </main>
+      <Footer />
     </div>
   );
 }
