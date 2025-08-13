@@ -1,33 +1,95 @@
-import React from 'react';
-import { Github, Linkedin, Mail } from 'lucide-react';
-import SocialLink from './SocialLink';
+import React, { useEffect, useRef, useState } from 'react';
+
+const typingTexts = [
+  'Full Stack Engineer',
+  'Angular 4+',
+  'React',
+  'Node.js',
+  'Python',
+  'AWS',
+  'Docker',
+  'CI/CD',
+];
 
 export default function Hero() {
+  const [textIndex, setTextIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [displayText, setDisplayText] = useState('');
+  const typingRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    const currentText = typingTexts[textIndex];
+    const typingSpeed = isDeleting ? 20 : 50;
+    let timeout: ReturnType<typeof setTimeout>;
+
+    if (!isDeleting && charIndex < currentText.length) {
+      // Typing forward
+      timeout = setTimeout(() => {
+        setDisplayText(currentText.substring(0, charIndex + 1));
+        setCharIndex((prev) => prev + 1);
+      }, typingSpeed);
+    } 
+    else if (isDeleting && charIndex > 0) {
+      // Deleting backwards
+      timeout = setTimeout(() => {
+        setDisplayText(currentText.substring(0, charIndex - 1));
+        setCharIndex((prev) => prev - 1);
+      }, typingSpeed);
+    } 
+    else if (!isDeleting && charIndex === currentText.length) {
+      // Pause at full text
+      timeout = setTimeout(() => setIsDeleting(true), 1500);
+    } 
+    else if (isDeleting && charIndex === 0) {
+      // Move to next word
+      setIsDeleting(false);
+      setTextIndex((prev) => (prev + 1) % typingTexts.length);
+    }
+
+    return () => clearTimeout(timeout);
+  }, [charIndex, isDeleting, textIndex]);
+
   return (
-    <header className="min-h-screen flex flex-col items-center justify-center text-center bg-gray-50">
-      <h1 className="text-4xl font-bold text-gray-900 mb-2">Sanjay Kumar P</h1>
-      <p className="text-lg text-gray-600 mb-4">Software Engineer</p>
-      <div className="flex gap-4 mb-8">
-        <SocialLink href="https://github.com" icon={<Github className="w-6 h-6" />} />
-        <SocialLink href="https://linkedin.com" icon={<Linkedin className="w-6 h-6" />} />
-        <SocialLink href="mailto:sanjay@example.com" icon={<Mail className="w-6 h-6" />} />
-      </div>
-      <section className="max-w-2xl text-gray-700">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-2">About Me</h2>
-        <div className="relative w-48 h-48 mx-auto mb-8 group">
+    <section id="home" className="gradient-bg min-h-screen flex items-center justify-center text-white">
+      <div className="text-center px-4">
+        <div className="w-32 h-32 mx-auto mb-8 relative flex items-center justify-center">
           <img
-            src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&h=300"
+            src="/profile-min.jpeg"
             alt="Profile"
-            className="rounded-full object-cover w-full h-full transition-transform duration-300 group-hover:scale-105 shadow-xl"
+            className="w-32 h-32 object-cover rounded-full shadow-lg border-4 border-white/20"
+            style={{ background: 'rgba(255,255,255,0.12)' }}
           />
-          <div className="absolute inset-0 rounded-full bg-blue-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+          <div className="absolute inset-0 rounded-full bg-white/20" />
         </div>
-        <p>
-          I am a passionate Full Stack Software Engineer with experience in building scalable web applications and
-          crafting intuitive user interfaces. I enjoy solving complex problems and continuously learning new
-          technologies to improve my craft.
+        <h1 className="text-5xl md:text-7xl font-bold mb-4 fade-in">Sanjay Kumar P</h1>
+        <p
+          className="text-xl md:text-2xl mb-8 fade-in typing"
+          ref={typingRef}
+          style={{ minHeight: 32 }}
+        >
+          {displayText}
+          <span className="typing-cursor">|</span>
         </p>
-      </section>
-    </header>
+        <p className="text-lg mb-8 max-w-2xl mx-auto fade-in">
+          Passionate about building scalable web applications with 8 years of experience in modern technologies
+        </p>
+        <div className="space-x-4 fade-in">
+          <a href="#projects" className="bg-white text-blue-600 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors">
+            View My Work
+          </a>
+          <a href="#contact" className="border-2 border-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-blue-600 transition-colors">
+            Get In Touch
+          </a>
+        </div>
+      </div>
+      <style>{`
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .fade-in { opacity: 0; transform: translateY(20px); animation: fadeIn 0.6s ease forwards; }
+        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+        .typing-cursor { animation: blink 1s infinite; }
+        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+      `}</style>
+    </section>
   );
 }
