@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 const navLinks = [
   { href: '#home', label: 'Home' },
   { href: '#about', label: 'About' },
-  { href: '#experience', label: 'Experience' },
+  // { href: '#experience', label: 'Experience' },
   { href: '#projects', label: 'Projects' },
   { href: '#contact', label: 'Contact' },
 ];
@@ -24,7 +24,7 @@ export default function Navigation() {
     <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-sm z-50 shadow-sm">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
-          <div className="text-2xl font-bold text-gray-800">SK</div>
+          <div className="text-2xl font-bold text-gray-800"></div>
           <div className="hidden md:flex space-x-8">
             {navLinks.map(link => (
               <a
