@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import ParticlesBackground from './ParticlesBackground';
 
 const typingTexts = [
-  'Full Stack Engineer',
+  'Software Engineer',
   'Angular 4+',
   'React',
   'Node.js',
@@ -51,14 +52,15 @@ export default function Hero() {
   }, [charIndex, isDeleting, textIndex]);
 
   return (
+    <ParticlesBackground>
     <section id="home" className="gradient-bg min-h-screen flex items-center justify-center text-white">
       <div className="text-center px-4">
         <div className="w-32 h-32 mx-auto mb-8 relative flex items-center justify-center">
           <img
-            src="/profile-min.jpeg"
+            src="/image.png"
             alt="Profile"
             className="w-32 h-32 object-cover rounded-full shadow-lg border-4 border-white/20"
-            style={{ background: 'rgba(255,255,255,0.12)' }}
+            style={{ background: 'rgba(255,255,255,0)' }}
           />
           <div className="absolute inset-0 rounded-full bg-white/20" />
         </div>
@@ -91,5 +93,6 @@ export default function Hero() {
         @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
       `}</style>
     </section>
+    </ParticlesBackground>
   );
 }
