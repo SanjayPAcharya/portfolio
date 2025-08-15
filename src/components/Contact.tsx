@@ -106,6 +106,11 @@ export default function Contact() {
                     key={idx}
                     href={link.href}
                     className={`w-10 h-10 ${link.bg} rounded-full flex items-center justify-center text-white transition-colors`}
+                    aria-label={link.href.includes('x.com') ? 'Follow me on X (Twitter)' : 
+                               link.href.includes('linkedin.com') ? 'Connect with me on LinkedIn' : 
+                               link.href.includes('github.com') ? 'View my projects on GitHub' : 'Social media link'}
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
                     {link.icon}
                   </a>
