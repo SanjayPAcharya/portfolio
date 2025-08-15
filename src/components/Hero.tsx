@@ -2,14 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import ParticlesBackground from './ParticlesBackground';
 
 const typingTexts = [
-  'Software Engineer',
-  'Angular 4+',
-  'React',
-  'Node.js',
-  'Python',
-  'AWS',
-  'Docker',
-  'CI/CD',
+  'Engineering Leader',
+  'Full Stack (React, Angular, Node.js, Python)',
+  'AI-driven Product Development',
+  'Cloud Architecture & DevOps (AWS Certified)',
+  'System Design & Scalability',
+  'Team Leadership & Mentoring',
+  'Agile & Product Delivery Excellence'
 ];
 
 export default function Hero() {
@@ -57,16 +56,16 @@ export default function Hero() {
       <div className="text-center px-4">
         <div className="w-32 h-32 mx-auto mb-8 relative flex items-center justify-center">
           <img
-            src="/image.png"
+            src="/image-min.png"
             alt="Profile"
             className="w-32 h-32 object-cover rounded-full shadow-lg border-4 border-white/20"
             style={{ background: 'rgba(255,255,255,0)' }}
           />
           <div className="absolute inset-0 rounded-full bg-white/20" />
         </div>
-        <h1 className="text-5xl md:text-7xl font-bold mb-4 fade-in">Sanjay Kumar P</h1>
+        <h1 className="text-4xl md:text-6xl font-bold mb-4 fade-in">Sanjay Kumar P</h1>
         <p
-          className="text-xl md:text-2xl mb-8 fade-in typing"
+          className="text-base md:text-lg mb-8 fade-in typing"
           ref={typingRef}
           style={{ minHeight: 32 }}
         >
@@ -74,7 +73,7 @@ export default function Hero() {
           <span className="typing-cursor">|</span>
         </p>
         <p className="text-lg mb-8 max-w-2xl mx-auto fade-in">
-          Passionate about building scalable web applications with 8 years of experience in modern technologies
+        8 years in the code trenches — now on a quest to tame AI, boost productivity, and ship smarter, faster, better.
         </p>
         <div className="space-x-4 fade-in">
           <a href="#projects" className="bg-white text-blue-600 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors">
