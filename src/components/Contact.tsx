@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
+import { useApi } from '../hooks/useApi';
 
 const contactInfo = [
   {
@@ -66,13 +67,40 @@ const socialLinks = [
 ];
 
 export default function Contact() {
-  const [formState, setFormState] = useState({ name: '', email: '', message: '' });
+  const [formState, setFormState] = useState({ name: '', email: '', phone: '', description: '' });
   const [modalOpen, setModalOpen] = useState(false);
+  const { post, loading, error } = useApi();
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
-  const handleSubmit = (e: React.FormEvent) => {
+  function validate() {
+    const errors: { [key: string]: string } = {};
+    if (!formState.name.trim()) errors.name = 'Name is required.';
+    if (!formState.email.trim()) {
+      errors.email = 'Email is required.';
+    } else if (!/^\S+@\S+\.\S+$/.test(formState.email)) {
+      errors.email = 'Invalid email address.';
+    }
+    if (!formState.phone.trim()) {
+      errors.phone = 'Phone is required.';
+    } else if (!/^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]*$/.test(formState.phone)) {
+      errors.phone = 'Invalid phone number.';
+    }
+    return errors;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setModalOpen(true);
-    setFormState({ name: '', email: '', message: '' });
+    const errors = validate();
+    setValidationErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+    try {
+      await post('contacts', formState);
+      setModalOpen(true);
+      setFormState({ name: '', email: '', phone: '', description: '' });
+      setValidationErrors({});
+    } catch {
+      // error is handled by the hook
+    }
   };
 
   return (
@@ -131,6 +159,7 @@ export default function Contact() {
                   onChange={e => setFormState(f => ({ ...f, name: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {validationErrors.name && <p className="text-red-600 text-sm mt-1">{validationErrors.name}</p>}
               </div>
               <div className="mb-6">
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email</label>
@@ -143,33 +172,48 @@ export default function Contact() {
                   onChange={e => setFormState(f => ({ ...f, email: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {validationErrors.email && <p className="text-red-600 text-sm mt-1">{validationErrors.email}</p>}
               </div>
               <div className="mb-6">
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">Message</label>
-                <textarea
-                  id="message"
-                  name="message"
-                  rows={4}
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
                   required
-                  value={formState.message}
-                  onChange={e => setFormState(f => ({ ...f, message: e.target.value }))}
+                  value={formState.phone}
+                  onChange={e => setFormState(f => ({ ...f, phone: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                {validationErrors.phone && <p className="text-red-600 text-sm mt-1">{validationErrors.phone}</p>}
+              </div>
+              <div className="mb-6">
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                <textarea
+                  id="description"
+                  name="description"
+                  rows={4}
+                  value={formState.description}
+                  onChange={e => setFormState(f => ({ ...f, description: e.target.value }))}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <button
                 type="submit"
                 className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                disabled={loading}
               >
-                Send Message
+                {loading ? 'Sending...' : 'Send Message'}
               </button>
+              {error && <p className="text-red-600 mt-2 text-sm">{error}</p>}
             </form>
           </div>
         </div>
         <Modal
           open={modalOpen}
           onClose={() => setModalOpen(false)}
-          title="Message Sent!"
-          message="Thank you for reaching out. I'll get back to you soon!"
+          title="Got Your Message!"
+          message='Thanks for reaching out — I’ll be sliding into your inbox soon!'
         />
       </div>
     </section>
