@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import ParticlesBackground from './ParticlesBackground';
 
 const typingTexts = [
-  'Engineering Leader',
-  'Full Stack (React, Angular, Node.js, Python)',
   'AI-driven Product Development',
+  'Full Stack (React, Angular, Node.js, Python)',
   'Cloud Architecture & DevOps (AWS Certified)',
+  'Agentic AI Workflows',
   'System Design & Scalability',
   'Team Leadership & Mentoring',
   'Agile & Product Delivery Excellence'
@@ -73,12 +73,9 @@ export default function Hero() {
           <span className="typing-cursor">|</span>
         </p>
         <p className="text-lg mb-8 max-w-2xl mx-auto fade-in">
-        8 years in the code trenches — now on a quest to tame AI, boost productivity, and ship smarter, faster, better.
+        8+ years in the code trenches — now on a quest to tame AI, boost productivity, and ship smarter, faster, better.
         </p>
         <div className="space-x-4 fade-in">
-          <a href="#projects" className="bg-white text-blue-600 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors">
-            View My Work
-          </a>
           <a href="#contact" className="border-2 border-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-blue-600 transition-colors">
             Get In Touch
           </a>

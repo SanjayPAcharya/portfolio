@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 const navLinks = [
   { href: '#home', label: 'Home' },
   { href: '#about', label: 'About' },
-  { href: '#skills', label: 'Skills' },
-  { href: '#projects', label: 'Projects' },
+  // { href: '#skills', label: 'Skills' },
+  // { href: '#projects', label: 'Projects' },
   { href: '#contact', label: 'Contact' },
 ];
 
@@ -33,7 +33,7 @@ export default function Navigation() {
       // Debounce the section detection
       scrollTimeout = setTimeout(() => {
         // Determine active section based on current scroll position
-        const sections = ['home', 'about', 'skills', 'projects', 'contact'];
+        const sections = ['home', 'about', /* 'skills', */ /* 'projects', */ 'contact'];
         let currentSection = 'home';
 
         // Check each section from bottom to top for more accurate detection
@@ -65,6 +65,17 @@ export default function Navigation() {
       clearTimeout(scrollTimeout);
     };
   }, []);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    function handleScroll() {
+      if (window.innerWidth < 768) {
+        setMobileOpen(false);
+      }
+    }
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [mobileOpen]);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>, href: string) => {
     e.preventDefault();
