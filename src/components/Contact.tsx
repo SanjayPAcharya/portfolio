@@ -104,9 +104,9 @@ export default function Contact() {
   };
 
   return (
-    <section id="contact" className="py-20 bg-gray-50">
+    <section id="contact" className="py-16 bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
+        <div className="text-center mb-10">
           <h2 className="text-4xl font-bold text-gray-800 mb-4">Get In Touch</h2>
           <p className="text-xl text-gray-600">Let's discuss your next project</p>
         </div>
@@ -148,8 +148,8 @@ export default function Contact() {
           </div>
           <div className="bg-white p-8 rounded-2xl shadow-sm">
             <form id="contact-form" onSubmit={handleSubmit}>
-              <div className="mb-6">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+              <div className="mb-4">
+                <label htmlFor="name" className="block text-xs font-medium text-gray-700 mb-1">Name</label>
                 <input
                   type="text"
                   id="name"
@@ -157,12 +157,12 @@ export default function Contact() {
                   required
                   value={formState.name}
                   onChange={e => setFormState(f => ({ ...f, name: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
-                {validationErrors.name && <p className="text-red-600 text-sm mt-1">{validationErrors.name}</p>}
+                {validationErrors.name && <p className="text-red-600 text-xs mt-1">{validationErrors.name}</p>}
               </div>
-              <div className="mb-6">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <div className="mb-4">
+                <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
                   id="email"
@@ -170,12 +170,12 @@ export default function Contact() {
                   required
                   value={formState.email}
                   onChange={e => setFormState(f => ({ ...f, email: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
-                {validationErrors.email && <p className="text-red-600 text-sm mt-1">{validationErrors.email}</p>}
+                {validationErrors.email && <p className="text-red-600 text-xs mt-1">{validationErrors.email}</p>}
               </div>
-              <div className="mb-6">
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+              <div className="mb-4">
+                <label htmlFor="phone" className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
                 <input
                   type="tel"
                   id="phone"
@@ -183,19 +183,19 @@ export default function Contact() {
                   required
                   value={formState.phone}
                   onChange={e => setFormState(f => ({ ...f, phone: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
-                {validationErrors.phone && <p className="text-red-600 text-sm mt-1">{validationErrors.phone}</p>}
+                {validationErrors.phone && <p className="text-red-600 text-xs mt-1">{validationErrors.phone}</p>}
               </div>
-              <div className="mb-6">
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+              <div className="mb-4">
+                <label htmlFor="description" className="block text-xs font-medium text-gray-700 mb-1">Message</label>
                 <textarea
                   id="description"
                   name="description"
-                  rows={4}
+                  rows={3}
                   value={formState.description}
                   onChange={e => setFormState(f => ({ ...f, description: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
               </div>
               <button

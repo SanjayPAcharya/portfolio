@@ -25,8 +25,9 @@ export function useApi<TData = unknown, TPayload = unknown>() {
       const result: TData = await response.json();
       setData(result);
       return result;
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      setError(message);
       throw err;
     } finally {
       setLoading(false);
