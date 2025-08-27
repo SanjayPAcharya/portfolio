@@ -3,11 +3,10 @@ import ParticlesBackground from './ParticlesBackground';
 
 const typingTexts = [
   'AI-driven Product Development',
-  'Full Stack (React, Angular, Node.js, Python)',
+  'Full Stack Developement',
   'Cloud Architecture & DevOps (AWS Certified)',
   'Agentic AI Workflows',
   'System Design & Scalability',
-  'Team Leadership & Mentoring',
   'Agile & Product Delivery Excellence'
 ];
 
