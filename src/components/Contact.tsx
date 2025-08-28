@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { useApi } from '../hooks/useApi';
 
@@ -38,6 +38,28 @@ export default function Contact() {
   const { post, loading, error } = useApi();
   const [modalMessage, setModalMessage] = useState('');
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+
+  // Custom vibrate animation styles
+  const vibrateStyle = loading ? {
+    animation: 'vibrate 0.3s infinite'
+  } : {};
+
+  useEffect(() => {
+    // Add custom CSS for vibrate animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes vibrate {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-2px); }
+        75% { transform: translateX(2px); }
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   function validate() {
     const errors: { [key: string]: string } = {};
@@ -155,7 +177,12 @@ export default function Contact() {
               </div>
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                className={`w-full text-white py-3 px-6 rounded-lg font-semibold transition-colors ${
+                  loading 
+                    ? 'bg-orange-500 hover:bg-orange-600' 
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+                style={vibrateStyle}
                 disabled={loading}
               >
                 {loading ? 'Sending...' : 'Send Message'}
