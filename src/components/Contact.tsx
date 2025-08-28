@@ -36,6 +36,7 @@ export default function Contact() {
   const [formState, setFormState] = useState({ name: '', email: '', phone: '', description: '' });
   const [modalOpen, setModalOpen] = useState(false);
   const { post, loading, error } = useApi();
+  const [modalMessage, setModalMessage] = useState('');
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   function validate() {
@@ -60,7 +61,14 @@ export default function Contact() {
     setValidationErrors(errors);
     if (Object.keys(errors).length > 0) return;
     try {
-      await post('contacts', formState);
+      const result = await post('contacts', formState);
+      const apiMessage = typeof result === 'string' ? result : (result as any)?.message ?? '';
+      const mappedMessage = apiMessage === 'Contact updated'
+        ? 'Thanks for reaching out again — I may have missed last time, I’ll be sliding into your inbox soon !'
+        : apiMessage === 'Contact created'
+          ? 'Thanks for reaching out — I’ll be sliding into your inbox soon!'
+          : (apiMessage || 'Thanks for reaching out — I’ll get back to you soon!');
+      setModalMessage(mappedMessage);
       setModalOpen(true);
       setFormState({ name: '', email: '', phone: '', description: '' });
       setValidationErrors({});
@@ -160,7 +168,7 @@ export default function Contact() {
           open={modalOpen}
           onClose={() => setModalOpen(false)}
           title="Got Your Message!"
-          message='Thanks for reaching out — I’ll be sliding into your inbox soon!'
+          message={modalMessage || 'Thanks for reaching out — I’ll be sliding into your inbox soon!'}
         />
         {/* Moved Follow section to bottom */}
         <div className="mt-12">
