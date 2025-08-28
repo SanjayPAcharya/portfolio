@@ -2,6 +2,7 @@ import Particles from 'react-tsparticles';
 import { loadSlim } from 'tsparticles-slim';
 import { FaReact, FaNodeJs, FaPython, FaDatabase, FaAws, FaAngular, FaDocker } from 'react-icons/fa';
 import { SiFlutter } from 'react-icons/si';
+import { useEffect, useRef, useState } from 'react';
 
 const skills = [
   { name: 'Angular', icon: <FaAngular className="text-blue-600 w-8 h-8" />, id: 'angular' },
@@ -42,13 +43,33 @@ export default function About() {
     await loadSlim(main);
   };
 
+  const skillsRef = useRef<HTMLDivElement>(null);
+  const [skillsVisible, setSkillsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setSkillsVisible(true);
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    if (skillsRef.current) {
+      observer.observe(skillsRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section id="about" className="py-20 bg-white relative overflow-hidden">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">About Me</h2>
           <p className="text-md text-gray-600 max-w-3xl mx-auto">
-           I’m a Full-Stack Engineer with 8 years of experience building software solutions that balance performance, simplicity, and usability. I enjoy transforming ideas into scalable systems through clean, maintainable code and thoughtful design.
+           I'm a Full-Stack Engineer with 8+ years of experience building software solutions that balance performance, simplicity, and usability. I enjoy transforming ideas into scalable systems through clean, maintainable code and thoughtful design.
           </p>
         </div>
 
@@ -56,7 +77,7 @@ export default function About() {
           {/* Technical Skills with ParticleJS */}
           <div>
             {/* <h3 className="text-2xl font-semibold mb-6 text-gray-800">Technical Skills</h3> */}
-            <div className="relative overflow-hidden pt-4 pb-4">
+            <div ref={skillsRef} className="relative overflow-hidden pt-4 pb-4">
               <Particles
                 id="skills-particles"
                 init={particlesInit}
@@ -97,11 +118,22 @@ export default function About() {
                 }}
                 className="absolute inset-0 pointer-events-none"
               />
-              <div className="relative z-10 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 place-items-center gap-6 p-4">
-                {skills.map(skill => (
-                  <div key={skill.id} className="flex flex-col items-center justify-center text-center">
-                    {skill.icon}
-                    <span className="text-sm mt-2 text-gray-700">{skill.name}</span>
+              <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-6 p-6">
+                {skills.map((skill, index) => (
+                  <div key={skill.id} className="flex flex-col items-center justify-center text-center min-h-[80px] w-full">
+                    <div
+                      className={`transition-all duration-700 ease-out transform flex flex-col items-center ${
+                        skillsVisible
+                          ? 'opacity-100 translate-y-0'
+                          : 'opacity-0 translate-y-8'
+                      }`}
+                      style={{
+                        transitionDelay: `${index * 100}ms`
+                      }}
+                    >
+                      {skill.icon}
+                      <span className="text-xs mt-2 text-gray-700 font-medium whitespace-nowrap">{skill.name}</span>
+                    </div>
                   </div>
                 ))}
               </div>
