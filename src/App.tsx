@@ -7,6 +7,7 @@ import About from './components/About';
 // import Projects from './components/Projects';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
+import EC2Control from './components/EC2Control';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         {/* <Experience /> */}
         {/* <Skills /> */}
         {/* <Projects /> */}
+        <EC2Control/>
         <Contact />
       </main>
       <Footer />
