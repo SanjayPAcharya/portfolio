@@ -1,49 +1,81 @@
-import React from 'react';
-import { Github, ExternalLink } from 'lucide-react';
+import React from "react";
+import { ExternalLink, Github } from "lucide-react";
 
 interface ProjectCardProps {
   title: string;
   description: string;
   image: string;
-  github: string;
-  demo: string;
-  delay: number;
+  github?: string;
+  demo?: string;
+  delay?: number;
+  isDemoLive?: boolean; // computed by parent
 }
 
-export default function ProjectCard({ title, description, image, github, demo, delay }: ProjectCardProps) {
+export default function ProjectCard({
+  title,
+  description,
+  image,
+  github,
+  demo,
+  delay = 0,
+  isDemoLive = false,
+}: ProjectCardProps): JSX.Element {
   return (
     <div
-      className="bg-gray-50 rounded-lg overflow-hidden transform transition-all duration-500 hover:scale-105 hover:shadow-xl"
       style={{ animationDelay: `${delay}ms` }}
+      className="relative rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-sm transition-all duration-300"
     >
-      <div className="relative overflow-hidden group">
+      {/* Image Section */}
+      <div className="relative aspect-video overflow-hidden bg-gray-50">
         <img
           src={image}
           alt={title}
-          className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
+          className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
+        <span
+          className={`absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full shadow-md
+            ${isDemoLive ? "bg-green-500 text-white" : "bg-gray-200 text-gray-700"}`}
+        >
+          {isDemoLive ? "Live" : "Offline"}
+        </span>
       </div>
-      <div className="p-6">
-        <h3 className="text-xl font-semibold mb-2">{title}</h3>
-        <p className="text-gray-600 mb-4">{description}</p>
-        <div className="flex items-center gap-4">
+
+      {/* Content Section */}
+      <div className="p-5 flex flex-col justify-between min-h-[180px]">
+        <div>
+          <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">{title}</h3>
+          <p className="text-gray-600 text-sm leading-relaxed">{description}</p>
+        </div>
+
+        {/* Buttons */}
+        <div className="flex items-center gap-4 mt-4">
+          {github && (
+            <a
+              href={github}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+            >
+              <Github size={16} />
+              Code
+            </a>
+          )}
+
+          {/* Demo button is disabled when not live */}
           <a
-            href={github}
-            className="text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors duration-300"
-            target="_blank"
-            rel="noopener noreferrer"
+            href={isDemoLive ? (demo ?? "#") : undefined}
+            target={isDemoLive ? "_blank" : undefined}
+            rel={isDemoLive ? "noopener noreferrer" : undefined}
+            aria-disabled={!isDemoLive}
+            onClick={(e) => {
+              if (!isDemoLive) e.preventDefault();
+            }}
+            className={`inline-flex items-center gap-2 text-sm font-medium rounded-full px-3 py-1.5 transition-all
+              ${isDemoLive
+                ? "bg-white text-blue-600 hover:text-blue-800 border border-blue-100 shadow-sm"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed opacity-80"}`}
           >
-            <Github size={20} />
-            Code
-          </a>
-          <a
-            href={demo}
-            className="text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors duration-300"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <ExternalLink size={20} />
+            <ExternalLink size={16} />
             Demo
           </a>
         </div>
