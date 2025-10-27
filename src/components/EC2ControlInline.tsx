@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useApi } from "../hooks/useApi";
 
 interface EC2Response {
@@ -15,20 +15,33 @@ interface EC2Response {
 
 type UiState = "checking" | "online" | "offline" | "error" | "auth";
 
-const EC2ControlInline = () => {
+interface EC2ControlInlineProps {
+  // optional external prop to set initial state (keeps existing behavior)
+  isRunningProp?: boolean;
+  // optional callback to notify parent when status changes
+  onStatusChange?: (running: boolean) => void;
+}
+
+const EC2ControlInline: React.FC<EC2ControlInlineProps> = ({ isRunningProp, onStatusChange }) => {
   const [status, setStatus] = useState<string>("Checking...");
-  const [isRunning, setIsRunning] = useState(false);
+  const [isRunning, setIsRunning] = useState<boolean>(Boolean(isRunningProp ?? false));
   const [uiState, setUiState] = useState<UiState>("checking");
 
   const { post: postCheck, loading: loadingCheck } = useApi<EC2Response>();
   const { post: postStart, loading: loadingStart } = useApi<EC2Response>();
-  const { post: postStop,  loading: loadingStop  } = useApi<EC2Response>();
+  const { post: postStop, loading: loadingStop } = useApi<EC2Response>();
 
   const loading = loadingStart || loadingStop || loadingCheck;
 
   // Guards for Strict Mode / unmount
-  const mountedRef = useRef(false);
-  const didCheckRef = useRef(false);
+  const mountedRef = useRef<boolean>(false);
+  const didCheckRef = useRef<boolean>(false);
+
+  // whenever internal isRunning changes, notify parent (if provided)
+  useEffect(() => {
+    onStatusChange?.(isRunning);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRunning]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -183,12 +196,10 @@ const EC2ControlInline = () => {
           md:justify-start md:gap-4
         "
       >
-        <div className={`w-2 h-2 rounded-full ${isRunning ? "bg-green-500" : uiState === "checking" ? "bg-blue-500" : "bg-gray-400"}`} />
-        <span
-          className="text-sm text-gray-700 min-w-[140px]"
-          aria-live="polite"
-          aria-atomic="true"
-        >
+        <div
+          className={`w-2 h-2 rounded-full ${isRunning ? "bg-green-500" : uiState === "checking" ? "bg-blue-500" : "bg-gray-400"}`}
+        />
+        <span className="text-sm text-gray-700 min-w-[140px]" aria-live="polite" aria-atomic="true">
           {status}
         </span>
 
