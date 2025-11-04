@@ -3,6 +3,7 @@ import Section from "./Section";
 import ProjectCard from "./ProjectCard";
 import EC2ControlInline from "./EC2ControlInline";
 import LiveSSEDashboardGIF from "../assets/Live-SSE-Dashboard.gif";
+import CompressDecompress from "../assets/compress-decompress.png";
 import { motion } from "framer-motion";
 
 interface Project {
@@ -11,8 +12,8 @@ interface Project {
   image: string;
   github?: string;
   demo?: string;
-  // this means "this project supports demo when server is running"
   isDemoLive?: boolean;
+  needServer?: boolean;
 }
 
 const projects: Project[] = [
@@ -23,7 +24,17 @@ const projects: Project[] = [
     github: "https://github.com/SanjayPAcharya/sse-realtime-app",
     demo: "https://sse.sanjaykumarp.info",
     isDemoLive: true,
+    needServer: true
   },
+  {
+    title: "Compression Decompression",
+    description: "Demo Application to compress and decompress json object.",
+    image: CompressDecompress,
+    github: "https://github.com/SanjayPAcharya/compress-decompress-json",
+    demo: "http://compress-decompress.s3-website-us-east-1.amazonaws.com",
+    isDemoLive: true,
+    needServer: false
+  }
 ];
 
 export default function Projects(): JSX.Element {
@@ -73,6 +84,7 @@ export default function Projects(): JSX.Element {
                     demo={project.demo}
                     delay={index * 100}
                     isDemoLive={effectiveIsDemoLive}
+                    needServer={project.needServer}
                   />
                 </div>
               </motion.div>

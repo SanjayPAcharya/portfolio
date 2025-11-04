@@ -9,6 +9,7 @@ interface ProjectCardProps {
   demo?: string;
   delay?: number;
   isDemoLive?: boolean; // computed by parent
+  needServer?: boolean;
 }
 
 export default function ProjectCard({
@@ -19,7 +20,9 @@ export default function ProjectCard({
   demo,
   delay = 0,
   isDemoLive = false,
+  needServer=false
 }: ProjectCardProps): JSX.Element {
+  const isDemoEnabled = !needServer || (needServer && isDemoLive);
   return (
     <div
       style={{ animationDelay: `${delay}ms` }}
@@ -34,9 +37,9 @@ export default function ProjectCard({
         />
         <span
           className={`absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full shadow-md
-            ${isDemoLive ? "bg-green-500 text-white" : "bg-gray-200 text-gray-700"}`}
+            ${isDemoEnabled ? "bg-green-500 text-white" : "bg-gray-200 text-gray-700"}`}
         >
-          {isDemoLive ? "Live" : "Offline"}
+          {isDemoEnabled ? "Live" : "Offline"}
         </span>
       </div>
 
@@ -63,15 +66,15 @@ export default function ProjectCard({
 
           {/* Demo button is disabled when not live */}
           <a
-            href={isDemoLive ? (demo ?? "#") : undefined}
-            target={isDemoLive ? "_blank" : undefined}
-            rel={isDemoLive ? "noopener noreferrer" : undefined}
-            aria-disabled={!isDemoLive}
+            href={isDemoEnabled ? (demo ?? "#") : undefined}
+            target={isDemoEnabled ? "_blank" : undefined}
+            rel={isDemoEnabled ? "noopener noreferrer" : undefined}
+            aria-disabled={!isDemoEnabled}
             onClick={(e) => {
-              if (!isDemoLive) e.preventDefault();
+              if (!isDemoEnabled) e.preventDefault();
             }}
             className={`inline-flex items-center gap-2 text-sm font-medium rounded-full px-3 py-1.5 transition-all
-              ${isDemoLive
+              ${isDemoEnabled
                 ? "bg-white text-blue-600 hover:text-blue-800 border border-blue-100 shadow-sm"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed opacity-80"}`}
           >

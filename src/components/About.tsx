@@ -7,12 +7,12 @@ import { useEffect, useRef, useState } from 'react';
 const skills = [
   { name: 'Angular', icon: <FaAngular className="text-blue-600 w-8 h-8" />, id: 'angular' },
   { name: 'React', icon: <FaReact className="text-blue-600 w-8 h-8" />, id: 'react' },
-  { name: 'Android-Flutter', icon: <SiFlutter className="text-blue-600 w-8 h-8" />, id: 'react' },
+  { name: 'Android-Flutter', icon: <SiFlutter className="text-blue-600 w-8 h-8" />, id: 'flutter' },
   { name: 'Node.js-Express', icon: <FaNodeJs className="text-green-600 w-8 h-8" />, id: 'node' },
   { name: 'Python-Django', icon: <FaPython className="text-yellow-600 w-8 h-8" />, id: 'python' },
   { name: 'SQL/NOSQL', icon: <FaDatabase className="text-purple-600 w-8 h-8" />, id: 'db' },
   { name: 'Cloud/AWS', icon: <FaAws className="text-red-600 w-8 h-8" />, id: 'aws' },
-  { name: 'CI/CD', icon: <FaDocker className="text-red-600 w-8 h-8" />, id: 'aws' },
+  { name: 'CI/CD', icon: <FaDocker className="text-red-600 w-8 h-8" />, id: 'cicd' },
 ];
 
 const whatIDo = [
