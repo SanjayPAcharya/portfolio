@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useApi } from '../hooks/useApi';
 
 export default function CM() {
   const [step, setStep] = useState(0);
+  const [hasSentRead, setHasSentRead] = useState(false);
   const maxStep = 4;
+  const { post } = useApi();
 
   const handleTap = () => {
     setStep(prev => (prev < maxStep ? prev + 1 : prev));
@@ -11,6 +14,37 @@ export default function CM() {
 
   const badgeText =
     step === 0 ? 'Touch me' : step < maxStep ? 'Touch me again' : 'Thank you';
+
+  useEffect(() => {
+    if (step !== maxStep || hasSentRead) return;
+
+    setHasSentRead(true);
+
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+
+    const trackingData = {
+      page: 'cm-secret',
+      readAt: new Date().toISOString(),
+      device: {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+        screenWidth: window.screen.width,
+        screenHeight: window.screen.height,
+      },
+    };
+
+    const payload = {
+      name: 'Read',
+      email: 'read@sanjaykumarp.info',
+      phone: '0000000000',
+      description: JSON.stringify(trackingData),
+    };
+
+    void post('contacts', payload).catch(() => {
+      // Ignore errors for this silent tracking call
+    });
+  }, [step, hasSentRead, post, maxStep]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-sky-900 text-white flex items-center justify-center px-4">
