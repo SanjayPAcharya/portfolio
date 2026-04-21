@@ -1,223 +1,238 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, type FormEvent } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import Modal from './Modal';
 import { useApi } from '../hooks/useApi';
 
-const socialLinks = [
+const SOCIAL = [
   {
     href: 'https://x.com/sanjay_kumar_p',
-    bg: 'bg-blue-600 hover:bg-blue-700',
+    label: 'X / Twitter',
+    desc: 'Follow my tech takes',
     icon: (
-      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
         <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
       </svg>
     ),
   },
   {
     href: 'https://www.linkedin.com/in/sanjay-kumar-p/',
-    bg: 'bg-blue-800 hover:bg-blue-900',
+    label: 'LinkedIn',
+    desc: 'Connect professionally',
     icon: (
-      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
         <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
       </svg>
     ),
   },
   {
     href: 'https://github.com/SanjayPAcharya',
-    bg: 'bg-gray-800 hover:bg-gray-900',
+    label: 'GitHub',
+    desc: 'Browse open source',
     icon: (
-      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
         <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
       </svg>
     ),
   },
 ];
 
+const inputClass = `w-full bg-white/[0.04] border border-white/10 text-slate-200 text-sm px-4 py-3 rounded-xl
+  placeholder-slate-600 focus:outline-none focus:border-violet-500/50 focus:bg-white/[0.07]
+  transition-all duration-200`;
+
 export default function Contact() {
-  const [formState, setFormState] = useState({ name: '', email: '', phone: '', description: '' });
-  const [modalOpen, setModalOpen] = useState(false);
+  const [form, setForm]   = useState({ name: '', email: '', phone: '', description: '' });
+  const [modal, setModal] = useState({ open: false, msg: '' });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const { post, loading, error } = useApi();
-  const [modalMessage, setModalMessage] = useState('');
-  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
-  // Custom vibrate animation styles
-  const vibrateStyle = loading ? {
-    animation: 'vibrate 0.3s infinite'
-  } : {};
+  const sectionRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start end', 'end start'] });
+  const blobY1 = useTransform(scrollYProgress, [0, 1], ['-8%', '8%']);
+  const blobY2 = useTransform(scrollYProgress, [0, 1], ['6%', '-6%']);
 
-  useEffect(() => {
-    // Add custom CSS for vibrate animation
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes vibrate {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-2px); }
-        75% { transform: translateX(2px); }
-      }
-    `;
-    document.head.appendChild(style);
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!form.name.trim())  e.name  = 'Required';
+    if (!form.email.trim()) e.email = 'Required';
+    else if (!/^\S+@\S+\.\S+$/.test(form.email)) e.email = 'Invalid email';
+    if (form.phone.trim() && !/^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]*$/.test(form.phone)) e.phone = 'Invalid number';
+    return e;
+  };
 
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
-
-  function validate() {
-    const errors: { [key: string]: string } = {};
-    if (!formState.name.trim()) errors.name = 'Name is required.';
-    if (!formState.email.trim()) {
-      errors.email = 'Email is required.';
-    } else if (!/^\S+@\S+\.\S+$/.test(formState.email)) {
-      errors.email = 'Invalid email address.';
-    }
-    if (!formState.phone.trim()) {
-      errors.phone = 'Phone is required.';
-    } else if (!/^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]*$/.test(formState.phone)) {
-      errors.phone = 'Invalid phone number.';
-    }
-    return errors;
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const errors = validate();
-    setValidationErrors(errors);
-    if (Object.keys(errors).length > 0) return;
+    const errs = validate();
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
     try {
-      const result = await post('contacts', formState);
-      const apiMessage = typeof result === 'string' ? result : (result as any)?.message ?? '';
-      const mappedMessage = apiMessage === 'Contact updated'
-        ? 'Thanks for reaching out again — I may have missed last time, I’ll be sliding into your inbox soon !'
-        : apiMessage === 'Contact created'
-          ? 'Thanks for reaching out — I’ll be sliding into your inbox soon!'
-          : (apiMessage || 'Thanks for reaching out — I’ll get back to you soon!');
-      setModalMessage(mappedMessage);
-      setModalOpen(true);
-      setFormState({ name: '', email: '', phone: '', description: '' });
-      setValidationErrors({});
-    } catch {
-      // error is handled by the hook
-    }
+      const res = await post('contacts', form);
+      const msg = (res as any)?.message ?? '';
+      setModal({
+        open: true,
+        msg: msg === 'Contact updated'
+          ? "Thanks for reaching out again — I'll be sliding into your inbox soon!"
+          : "Thanks for reaching out — I'll be sliding into your inbox soon!",
+      });
+      setForm({ name: '', email: '', phone: '', description: '' });
+      setErrors({});
+    } catch { /* handled by hook */ }
   };
 
   return (
-    <section id="contact" className="py-16 bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-10">
-          <h2 className="text-4xl font-bold text-gray-800 mb-4">Get In Touch</h2>
-          <p className="text-xl text-gray-600">Let's discuss your next project</p>
-        </div>
-        <div className="grid gap-12">
-          {/* <div>
-            <h3 className="text-2xl font-semibold mb-6 text-gray-800">Contact Information</h3>
-            <div className="space-y-4">
-              {contactInfo.map(info => (
-                <div className="flex items-center space-x-3" key={info.label}>
-                  <div className={`w-10 h-10 ${info.iconBg} rounded-full flex items-center justify-center`}>
-                    {info.icon}
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-800">{info.label}</p>
-                    <p className="text-gray-600">{info.value}</p>
-                  </div>
+    <section ref={sectionRef} id="contact" className="relative py-28 bg-[#08080F] overflow-hidden">
+      {/* Parallax blobs */}
+      <motion.div style={{ y: blobY1 }} className="absolute top-0 left-[10%] w-[500px] h-[500px] bg-violet-700/15 rounded-full blur-[150px] pointer-events-none" />
+      <motion.div style={{ y: blobY2 }} className="absolute bottom-0 right-[5%] w-[400px] h-[400px] bg-pink-700/12 rounded-full blur-[130px] pointer-events-none" />
+      <div className="absolute inset-0 bg-dot-pattern opacity-30 pointer-events-none" />
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mb-14"
+        >
+          <p className="text-xs font-medium text-violet-400/70 tracking-[0.25em] uppercase mb-3">— Get In Touch —</p>
+          <h2 className="font-display text-4xl md:text-5xl font-bold gradient-text">Let's Build</h2>
+        </motion.div>
+
+        {/* Two-column */}
+        <div className="grid md:grid-cols-2 gap-12 lg:gap-20 items-start">
+
+          {/* Left */}
+          <motion.div
+            initial={{ opacity: 0, x: -24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <p className="text-slate-300 leading-relaxed mb-10">
+              Open to full-stack, AI, or cloud engagements — whether that's a greenfield product,
+              a stubborn legacy problem, or a team that needs senior hands-on experience.
+            </p>
+
+            {/* Availability */}
+            <div className="mb-10 space-y-2.5">
+              <p className="text-[10px] font-medium text-slate-600 tracking-[0.25em] uppercase mb-4">Available For</p>
+              {[
+                'Full-Stack Product Development',
+                'AI / LLM Integration',
+                'Cloud Architecture (AWS)',
+                'Technical Leadership',
+              ].map(item => (
+                <div key={item} className="flex items-center gap-3 text-sm text-slate-400">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg, #8B5CF6, #EC4899)' }}
+                  />
+                  {item}
                 </div>
               ))}
             </div>
-          </div> */}
-          <div className="bg-white p-8 rounded-2xl shadow-sm max-w-xl mx-auto w-full">
-            <form id="contact-form" onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label htmlFor="name" className="block text-xs font-medium text-gray-700 mb-1">Name</label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  required
-                  value={formState.name}
-                  onChange={e => setFormState(f => ({ ...f, name: e.target.value }))}
-                  className="w-full px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                />
-                {validationErrors.name && <p className="text-red-600 text-xs mt-1">{validationErrors.name}</p>}
+
+            {/* Response time */}
+            <div className="flex items-center gap-3 text-sm mb-10">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+              <span className="text-slate-500">Response time:</span>
+              <span className="text-emerald-400 font-medium">~24 hours</span>
+            </div>
+
+            {/* Social links */}
+            <div>
+              <p className="text-[10px] font-medium text-slate-600 tracking-[0.25em] uppercase mb-4">Find Me Online</p>
+              <div className="space-y-3">
+                {SOCIAL.map(s => (
+                  <a key={s.href} href={s.href} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-3 group">
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 glass group-hover:text-white transition-all duration-200 flex-shrink-0"
+                      style={{ '--hover-bg': 'rgba(139,92,246,0.15)' } as React.CSSProperties}
+                    >
+                      {s.icon}
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-300 font-medium group-hover:text-white transition-colors">{s.label}</p>
+                      <p className="text-xs text-slate-500">{s.desc}</p>
+                    </div>
+                  </a>
+                ))}
               </div>
-              <div className="mb-4">
-                <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  required
-                  value={formState.email}
-                  onChange={e => setFormState(f => ({ ...f, email: e.target.value }))}
-                  className="w-full px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                />
-                {validationErrors.email && <p className="text-red-600 text-xs mt-1">{validationErrors.email}</p>}
+            </div>
+          </motion.div>
+
+          {/* Right — form */}
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="glass-strong rounded-2xl p-8"
+          >
+            <p className="text-xs font-medium text-violet-400/70 tracking-[0.2em] uppercase mb-6">Send a Message</p>
+
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-medium text-slate-500 tracking-wider uppercase mb-1.5">Name *</label>
+                  <input type="text" placeholder="Your name" value={form.name}
+                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                    className={inputClass} />
+                  {errors.name && <p className="text-[10px] text-red-400 mt-1">{errors.name}</p>}
+                </div>
+                <div>
+                  <label className="block text-[10px] font-medium text-slate-500 tracking-wider uppercase mb-1.5">Phone</label>
+                  <input type="tel" placeholder="+1 555 000 0000" value={form.phone}
+                    onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                    className={inputClass} />
+                  {errors.phone && <p className="text-[10px] text-red-400 mt-1">{errors.phone}</p>}
+                </div>
               </div>
-              <div className="mb-4">
-                <label htmlFor="phone" className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  required
-                  value={formState.phone}
-                  onChange={e => setFormState(f => ({ ...f, phone: e.target.value }))}
-                  className="w-full px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                />
-                {validationErrors.phone && <p className="text-red-600 text-xs mt-1">{validationErrors.phone}</p>}
+
+              <div>
+                <label className="block text-[10px] font-medium text-slate-500 tracking-wider uppercase mb-1.5">Email *</label>
+                <input type="email" placeholder="you@example.com" value={form.email}
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  className={inputClass} />
+                {errors.email && <p className="text-[10px] text-red-400 mt-1">{errors.email}</p>}
               </div>
-              <div className="mb-4">
-                <label htmlFor="description" className="block text-xs font-medium text-gray-700 mb-1">Message</label>
-                <textarea
-                  id="description"
-                  name="description"
-                  rows={3}
-                  value={formState.description}
-                  onChange={e => setFormState(f => ({ ...f, description: e.target.value }))}
-                  className="w-full px-2 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                />
+
+              <div>
+                <label className="block text-[10px] font-medium text-slate-500 tracking-wider uppercase mb-1.5">Message</label>
+                <textarea rows={5} placeholder="Tell me what you're building..." value={form.description}
+                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                  className={`${inputClass} resize-none`} />
               </div>
+
               <button
                 type="submit"
-                className={`w-full text-white py-3 px-6 rounded-lg font-semibold transition-colors ${
-                  loading 
-                    ? 'bg-orange-500 hover:bg-orange-600' 
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}
-                style={vibrateStyle}
                 disabled={loading}
+                className={`w-full py-3.5 rounded-xl font-semibold text-sm text-white transition-all duration-200 ${
+                  loading ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90 hover:scale-[1.02]'
+                }`}
+                style={{
+                  background: 'linear-gradient(135deg, #8B5CF6, #EC4899)',
+                  boxShadow: '0 0 28px rgba(139,92,246,0.4)',
+                }}
               >
-                {loading ? 'Sending...' : 'Send Message'}
+                {loading ? 'Sending...' : 'Send Message →'}
               </button>
-              {error && <p className="text-red-600 mt-2 text-sm">{error}</p>}
+
+              {error && <p className="text-[11px] text-red-400 text-center">{error}</p>}
             </form>
-          </div>
-        </div>
-        <Modal
-          open={modalOpen}
-          onClose={() => setModalOpen(false)}
-          title="Got Your Message!"
-          message={modalMessage || 'Thanks for reaching out — I’ll be sliding into your inbox soon!'}
-        />
-        {/* Moved Follow section to bottom */}
-        <div className="mt-12">
-          <h4 className="text-center font-semibold text-gray-800 mb-4">Follow Me</h4>
-          <div className="flex justify-center space-x-4">
-            {socialLinks.map((link, idx) => (
-              <a
-                key={idx}
-                href={link.href}
-                className={`w-10 h-10 ${link.bg} rounded-full flex items-center justify-center text-white transition-colors`}
-                aria-label={link.href.includes('x.com') ? 'Follow me on X (Twitter)' :
-                           link.href.includes('linkedin.com') ? 'Connect with me on LinkedIn' :
-                           link.href.includes('github.com') ? 'View my projects on GitHub' : 'Social media link'}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {link.icon}
-              </a>
-            ))}
-          </div>
+          </motion.div>
         </div>
       </div>
+
+      <Modal
+        open={modal.open}
+        onClose={() => setModal(m => ({ ...m, open: false }))}
+        title="Message Received"
+        message={modal.msg || "Thanks for reaching out — I'll be sliding into your inbox soon!"}
+      />
     </section>
   );
 }

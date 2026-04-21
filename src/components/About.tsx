@@ -1,164 +1,154 @@
-import Particles from 'react-tsparticles';
-import { loadSlim } from 'tsparticles-slim';
+import { useRef } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { FaReact, FaNodeJs, FaPython, FaDatabase, FaAws, FaAngular, FaDocker } from 'react-icons/fa';
 import { SiFlutter } from 'react-icons/si';
-import { useEffect, useRef, useState } from 'react';
 
 const skills = [
-  { name: 'Angular', icon: <FaAngular className="text-blue-600 w-8 h-8" />, id: 'angular' },
-  { name: 'React', icon: <FaReact className="text-blue-600 w-8 h-8" />, id: 'react' },
-  { name: 'Android-Flutter', icon: <SiFlutter className="text-blue-600 w-8 h-8" />, id: 'flutter' },
-  { name: 'Node.js-Express', icon: <FaNodeJs className="text-green-600 w-8 h-8" />, id: 'node' },
-  { name: 'Python-Django', icon: <FaPython className="text-yellow-600 w-8 h-8" />, id: 'python' },
-  { name: 'SQL/NOSQL', icon: <FaDatabase className="text-purple-600 w-8 h-8" />, id: 'db' },
-  { name: 'Cloud/AWS', icon: <FaAws className="text-red-600 w-8 h-8" />, id: 'aws' },
-  { name: 'CI/CD', icon: <FaDocker className="text-red-600 w-8 h-8" />, id: 'cicd' },
+  { name: 'Angular',         icon: <FaAngular  className="w-5 h-5" />, color: 'from-red-500 to-pink-500'   },
+  { name: 'React',           icon: <FaReact    className="w-5 h-5" />, color: 'from-cyan-400 to-blue-500'  },
+  { name: 'Flutter',         icon: <SiFlutter  className="w-5 h-5" />, color: 'from-sky-400 to-cyan-500'   },
+  { name: 'Node.js',         icon: <FaNodeJs   className="w-5 h-5" />, color: 'from-green-400 to-emerald-500'},
+  { name: 'Python / Django', icon: <FaPython   className="w-5 h-5" />, color: 'from-yellow-400 to-amber-500'},
+  { name: 'SQL / NoSQL',     icon: <FaDatabase className="w-5 h-5" />, color: 'from-violet-400 to-purple-500'},
+  { name: 'AWS Cloud',       icon: <FaAws      className="w-5 h-5" />, color: 'from-orange-400 to-yellow-500'},
+  { name: 'CI / CD',         icon: <FaDocker   className="w-5 h-5" />, color: 'from-blue-400 to-indigo-500' },
 ];
 
 const whatIDo = [
   {
-    iconBg: 'bg-blue-600',
+    gradient: 'from-violet-600 to-blue-600',
     title: 'Frontend Development',
-    desc: 'Crafting responsive and interactive user interfaces with modern frameworks and clean UI/UX principles.',
+    desc: 'Crafting responsive, interactive UIs with modern frameworks and clean UX.',
   },
   {
-    iconBg: 'bg-green-600',
+    gradient: 'from-pink-500 to-rose-600',
     title: 'Backend Development',
-    desc: 'Building robust APIs and server-side applications using Node.js, Python, and scalable database solutions.',
+    desc: 'Robust APIs and server-side apps using Node.js, Python, and scalable databases.',
   },
   {
-    iconBg: 'bg-purple-600',
-    title: 'DevOps & Deployment',
-    desc: 'Automating deployments, managing cloud infrastructure, and ensuring system reliability with CI/CD pipelines.',
+    gradient: 'from-cyan-500 to-teal-500',
+    title: 'DevOps & Cloud',
+    desc: 'CI/CD pipelines, AWS infrastructure, containerisation, and observability.',
   },
   {
-    iconBg: 'bg-orange-600',
-    title: 'Agile & Project Delivery',
-    desc: 'Managing the full software development lifecycle—planning, execution, and delivery—through agile methodologies, with continuous support until client satisfaction.',
-  }
+    gradient: 'from-amber-400 to-orange-500',
+    title: 'AI / LLM Integration',
+    desc: 'Agentic AI workflows, LLM-powered features, and GenAI product delivery.',
+  },
 ];
 
+const stats = [
+  { value: '8+',  label: 'Years Experience' },
+  { value: '50+', label: 'Projects Shipped'  },
+  { value: '3',   label: 'Cloud Certs'       },
+];
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 28 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.55, ease: 'easeOut' as const } },
+};
+
 export default function About() {
-  const particlesInit = async (main: any) => {
-    await loadSlim(main);
-  };
-
-  const skillsRef = useRef<HTMLDivElement>(null);
-  const [skillsVisible, setSkillsVisible] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setSkillsVisible(true);
-        }
-      },
-      { threshold: 0.3 }
-    );
-
-    if (skillsRef.current) {
-      observer.observe(skillsRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
+  const sectionRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start end', 'end start'] });
+  const blobY1 = useTransform(scrollYProgress, [0, 1], ['-8%', '8%']);
+  const blobY2 = useTransform(scrollYProgress, [0, 1], ['8%', '-8%']);
 
   return (
-    <section id="about" className="py-20 bg-white relative overflow-hidden">
+    <section ref={sectionRef} id="about" className="relative py-28 bg-[#08080F] overflow-hidden">
+      {/* Parallax blobs */}
+      <motion.div style={{ y: blobY1 }} className="absolute top-0 right-0 w-[500px] h-[500px] bg-violet-700/15 rounded-full blur-[140px] pointer-events-none" />
+      <motion.div style={{ y: blobY2 }} className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-pink-700/12 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute inset-0 bg-dot-pattern opacity-30 pointer-events-none" />
+
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center mb-16">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">About Me</h2>
-          <p className="text-md text-gray-600 max-w-3xl mx-auto">
-           I'm a Full-Stack Engineer with 8+ years of experience building software solutions that balance performance, simplicity, and usability. I enjoy transforming ideas into scalable systems through clean, maintainable code and thoughtful design.
-          </p>
-        </div>
 
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          {/* Technical Skills with ParticleJS */}
-          <div>
-            {/* <h3 className="text-2xl font-semibold mb-6 text-gray-800">Technical Skills</h3> */}
-            <div ref={skillsRef} className="relative overflow-hidden pt-4 pb-4">
-              <Particles
-                id="skills-particles"
-                init={particlesInit}
-                options={{
-                  fullScreen: false,
-                  background: { color: { value: '#ffffff' } },
-                  fpsLimit: 60,
-                  interactivity: {
-                    events: {
-                      onHover: { enable: true, mode: 'grab' },
-                      resize: true,
-                    },
-                    modes: {
-                      grab: {
-                        distance: 140,
-                        links: { opacity: 0.5 },
-                      },
-                    },
-                  },
-                  particles: {
-                    number: { value: skills.length, density: { enable: false } },
-                    shape: { type: 'circle' },
-                    size: { value: 0 },
-                    links: {
-                      enable: true,
-                      distance: 120,
-                      color: '#999',
-                      opacity: 0.4,
-                      width: 1,
-                    },
-                    move: {
-                      enable: true,
-                      speed: 1,
-                      direction: 'none',
-                      outModes: { default: 'bounce' },
-                    },
-                  },
-                }}
-                className="absolute inset-0 pointer-events-none"
-              />
-              <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-6 p-6">
-                {skills.map((skill, index) => (
-                  <div key={skill.id} className="flex flex-col items-center justify-center text-center min-h-[80px] w-full">
-                    <div
-                      className={`transition-all duration-700 ease-out transform flex flex-col items-center ${
-                        skillsVisible
-                          ? 'opacity-100 translate-y-0'
-                          : 'opacity-0 translate-y-8'
-                      }`}
-                      style={{
-                        transitionDelay: `${index * 100}ms`
-                      }}
-                    >
-                      {skill.icon}
-                      <span className="text-xs mt-2 text-gray-700 font-medium whitespace-nowrap">{skill.name}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+        {/* Header */}
+        <motion.div
+          initial="hidden" whileInView="show" viewport={{ once: true }}
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1 } } }}
+          className="text-center mb-16"
+        >
+          <motion.p variants={fadeUp} className="text-xs font-medium text-violet-400/70 tracking-[0.25em] uppercase mb-3">
+            — About Me —
+          </motion.p>
+          <motion.h2 variants={fadeUp} className="font-display text-4xl md:text-5xl font-bold gradient-text mb-5">
+            Who I Am
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-slate-400 max-w-2xl mx-auto text-base leading-relaxed">
+            Full-Stack Engineer with 8+ years building software that balances performance, simplicity, and usability. I transform ideas into scalable systems through clean code and thoughtful design.
+          </motion.p>
+        </motion.div>
 
-          {/* What I Do Section */}
-          <div className="bg-gray-50 p-8 rounded-2xl">
-            <h3 className="text-xl font-semibold mb-6 text-gray-800">What I Do</h3>
-            <div className="space-y-4">
-              {whatIDo.map(item => (
-                <div className="flex items-start space-x-3" key={item.title}>
-                  <div className={`w-6 h-6 ${item.iconBg} rounded-full flex items-center justify-center mt-1`}>
-                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-800">{item.title}</h4>
-                    <p className="text-sm text-gray-600">{item.desc}</p>
-                  </div>
-                </div>
+        {/* Stats */}
+        <motion.div
+          initial="hidden" whileInView="show" viewport={{ once: true }}
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.12 } } }}
+          className="grid grid-cols-3 gap-4 mb-16"
+        >
+          {stats.map(s => (
+            <motion.div key={s.label} variants={fadeUp} className="glass rounded-2xl p-5 text-center">
+              <p className="font-display text-3xl md:text-4xl font-bold gradient-text mb-1">{s.value}</p>
+              <p className="text-xs text-slate-500 tracking-wide">{s.label}</p>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Two-column */}
+        <div className="grid md:grid-cols-2 gap-10 items-start">
+
+          {/* Left — Skills */}
+          <motion.div
+            initial="hidden" whileInView="show" viewport={{ once: true }}
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+          >
+            <motion.h3 variants={fadeUp} className="font-display text-xl font-semibold text-white mb-6">
+              Tech Stack
+            </motion.h3>
+            <div className="grid grid-cols-2 gap-3">
+              {skills.map(skill => (
+                <motion.div
+                  key={skill.name}
+                  variants={fadeUp}
+                  className="glass rounded-xl p-4 flex items-center gap-3 group hover:bg-white/[0.08] transition-colors duration-200"
+                >
+                  <span
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center text-white bg-gradient-to-br ${skill.color} flex-shrink-0 group-hover:scale-110 transition-transform duration-200`}
+                  >
+                    {skill.icon}
+                  </span>
+                  <span className="text-sm text-slate-300 font-medium">{skill.name}</span>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
+
+          {/* Right — What I Do */}
+          <motion.div
+            initial="hidden" whileInView="show" viewport={{ once: true }}
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1 } } }}
+          >
+            <motion.h3 variants={fadeUp} className="font-display text-xl font-semibold text-white mb-6">
+              What I Do
+            </motion.h3>
+            <div className="space-y-4">
+              {whatIDo.map(item => (
+                <motion.div
+                  key={item.title}
+                  variants={fadeUp}
+                  className="glass rounded-xl p-5 flex items-start gap-4 hover:bg-white/[0.07] transition-colors duration-200 group"
+                >
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 bg-gradient-to-br ${item.gradient} group-hover:scale-125 transition-transform duration-200`}
+                  />
+                  <div>
+                    <h4 className="font-semibold text-white text-sm mb-1">{item.title}</h4>
+                    <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </div>
     </section>
