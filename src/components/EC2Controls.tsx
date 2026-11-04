@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Server, Power, RefreshCw, Globe } from "lucide-react";
+import { Server, Power, RefreshCw, Globe, Lock } from "lucide-react";
 import { useApi } from "../hooks/useApi";
 
 interface EC2Response {
@@ -15,7 +15,7 @@ interface EC2Response {
   error?: string;
 }
 
-type UiState = "checking" | "online" | "offline" | "error" | "auth" | "unconfigured";
+type UiState = "checking" | "online" | "offline" | "error" | "auth" | "unconfigured" | "locked";
 
 interface Machine {
   name: string;
@@ -27,6 +27,13 @@ interface Machine {
   // Legacy control: separate start/stop endpoints, status via start endpoint + { isUP: true }
   startEndpoint?: string;
   stopEndpoint?: string;
+  // Passcode auth: no secret in the bundle. The user types a passcode that is held in
+  // component state only (never localStorage/sessionStorage/URL) and sent in x-custom-auth.
+  requiresPasscode?: boolean;
+  // Message shown after a successful start (e.g. warm-up time).
+  startNote?: string;
+  // Persistent note shown on the card.
+  note?: string;
 }
 
 const machines: Machine[] = [
@@ -47,6 +54,17 @@ const machines: Machine[] = [
     secretKey: import.meta.env.VITE_EC2_SECRET_KEY_2,
     controlEndpoint: import.meta.env.VITE_EC2_CONTROL_ENDPOINT_2,
   },
+  {
+    name: "ErpAgent",
+    description:
+      "ERP demo server (ERPNext-based) — erp.buildenic.com.",
+    tags: ["ERP", "AWS EC2", "Lambda"],
+    // Public Lambda Function URL (not a secret). No secretKey: auth is a passcode the user types.
+    controlEndpoint: "https://twlkd2ycdmbopdtnwjg37ico6q0ycypm.lambda-url.ap-south-1.on.aws/",
+    requiresPasscode: true,
+    startNote: "Starting — the site can take ~2 minutes.",
+    note: "No automatic stop. Stop it when you're done.",
+  },
 ];
 
 const statusPill: Record<UiState, { classes: string; label: string }> = {
@@ -56,12 +74,17 @@ const statusPill: Record<UiState, { classes: string; label: string }> = {
   auth: { classes: "bg-red-500/10 text-red-400 border-red-500/30", label: "⛔ Auth failed" },
   error: { classes: "bg-red-500/10 text-red-400 border-red-500/30", label: "⚠ Error" },
   unconfigured: { classes: "bg-white/5 text-slate-600 border-white/10", label: "— Not configured" },
+  locked: { classes: "bg-amber-500/10 text-amber-400 border-amber-500/30", label: "🔒 Locked" },
 };
 
 const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine, index }) => {
-  const [statusDetail, setStatusDetail] = useState<string>("Checking server status…");
+  const [statusDetail, setStatusDetail] = useState<string>(
+    machine.requiresPasscode ? "Enter passcode to check status" : "Checking server status…"
+  );
   const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [uiState, setUiState] = useState<UiState>("checking");
+  const [uiState, setUiState] = useState<UiState>(machine.requiresPasscode ? "locked" : "checking");
+  // Passcode is kept in memory only — never persisted to localStorage, sessionStorage or the URL.
+  const [passcode, setPasscode] = useState<string>("");
 
   const { post: postCheck, loading: loadingCheck } = useApi<EC2Response>();
   const { post: postStart, loading: loadingStart } = useApi<EC2Response>();
@@ -71,7 +94,10 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
   const configured = Boolean(
     machine.controlEndpoint || (machine.startEndpoint && machine.stopEndpoint)
   );
-  const authHeaders = { "x-custom-auth": machine.secretKey ?? "" };
+  const hasAuth = !machine.requiresPasscode || passcode.trim().length > 0;
+  const authHeaders = {
+    "x-custom-auth": machine.requiresPasscode ? passcode : machine.secretKey ?? "",
+  };
 
   const mountedRef = useRef<boolean>(false);
   const didCheckRef = useRef<boolean>(false);
@@ -94,6 +120,11 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
       setUiState("unconfigured");
       return;
     }
+    if (machine.requiresPasscode && !passcode.trim()) {
+      setStatusDetail("Enter passcode to check status");
+      setUiState("locked");
+      return;
+    }
     setStatusDetail("Checking server status…");
     setUiState("checking");
     try {
@@ -114,10 +145,13 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
   useEffect(() => {
     mountedRef.current = true;
 
-    if (didCheckRef.current) return;
-    didCheckRef.current = true;
-
-    checkStatus();
+    if (!didCheckRef.current) {
+      didCheckRef.current = true;
+      // Passcode machines wait for the user; everything else checks on load.
+      if (!machine.requiresPasscode) {
+        checkStatus();
+      }
+    }
 
     return () => {
       mountedRef.current = false;
@@ -134,12 +168,19 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
         ? await postStart(machine.controlEndpoint, { action: "start" }, authHeaders)
         : await postStart(machine.startEndpoint!, {}, authHeaders);
       if (!mountedRef.current) return;
-      applyState({ ...data, state: data.state || "running" });
-    } catch {
+      if (machine.startNote) {
+        setIsRunning(true);
+        setUiState("online");
+        setStatusDetail(machine.startNote);
+      } else {
+        applyState({ ...data, state: data.state || "running" });
+      }
+    } catch (e: any) {
       if (!mountedRef.current) return;
       setIsRunning(false);
-      setStatusDetail("Start failed — try again");
-      setUiState("error");
+      const isAuth = e?.message?.includes?.("Forbidden");
+      setStatusDetail(isAuth ? "Authentication failed" : "Start failed — try again");
+      setUiState(isAuth ? "auth" : "error");
     }
   };
 
@@ -156,17 +197,18 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
       setIsRunning(false);
       setStatusDetail("Instance is stopped");
       setUiState("offline");
-    } catch {
+    } catch (e: any) {
       if (!mountedRef.current) return;
-      setStatusDetail("Stop failed — try again");
-      setUiState("error");
+      const isAuth = e?.message?.includes?.("Forbidden");
+      setStatusDetail(isAuth ? "Authentication failed" : "Stop failed — try again");
+      setUiState(isAuth ? "auth" : "error");
     }
   };
 
   const pill = statusPill[uiState];
-  // Only allow an action once the actual state is known, and never repeat the current one
-  const canStart = configured && !loading && uiState === "offline";
-  const canStop = configured && !loading && uiState === "online";
+  // Only allow an action once the actual state is known, and never repeat the current one.
+  const canStart = configured && hasAuth && !loading && uiState === "offline";
+  const canStop = configured && hasAuth && !loading && uiState === "online";
 
   return (
     <motion.div
@@ -213,6 +255,45 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
           ))}
         </div>
 
+        {/* Passcode field — only for passcode-protected machines. Value stays in memory only. */}
+        {machine.requiresPasscode && (
+          <div className="mb-6">
+            <label
+              htmlFor={`passcode-${machine.name}`}
+              className="flex items-center gap-1.5 text-[10px] font-medium text-amber-400/80 tracking-[0.15em] uppercase mb-2"
+            >
+              <Lock size={11} className="flex-shrink-0" />
+              Passcode
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                id={`passcode-${machine.name}`}
+                type="password"
+                value={passcode}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="Enter passcode"
+                onChange={(e) => setPasscode(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && passcode.trim() && !loading) checkStatus();
+                }}
+                className="flex-1 min-w-0 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-400/40 focus:bg-white/[0.07] transition-colors"
+              />
+              <button
+                onClick={checkStatus}
+                disabled={!passcode.trim() || loading}
+                className="flex-shrink-0 rounded-lg border border-amber-400/30 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Unlock
+              </button>
+            </div>
+            <p className="mt-2 text-[10px] text-slate-600 leading-relaxed">
+              Held in memory only — never saved to the browser. You enter it here; it is sent
+              with the control request.
+            </p>
+          </div>
+        )}
+
         {/* Status detail */}
         <div className="flex items-center gap-2 text-xs text-slate-500 mb-6" aria-live="polite">
           <Globe size={12} className="flex-shrink-0" />
@@ -257,7 +338,7 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
 
           <button
             onClick={checkStatus}
-            disabled={!configured || loading}
+            disabled={!configured || loading || (machine.requiresPasscode && !passcode.trim())}
             title="Refresh status"
             aria-label={`Refresh ${machine.name} status`}
             className="ml-auto inline-flex items-center justify-center w-9 h-9 rounded-full border border-white/10 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -265,6 +346,13 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
             <RefreshCw size={13} className={loadingCheck ? "animate-spin" : ""} />
           </button>
         </div>
+
+        {/* Persistent note */}
+        {machine.note && (
+          <p className="mt-5 text-[11px] text-amber-400/70 leading-relaxed border-t border-white/5 pt-4">
+            {machine.note}
+          </p>
+        )}
       </div>
     </motion.div>
   );
