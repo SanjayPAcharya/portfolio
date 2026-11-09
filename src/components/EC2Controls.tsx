@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Server, Power, RefreshCw, Globe, Lock } from "lucide-react";
 import { useApi } from "../hooks/useApi";
+import ErpAgentPlans from "./ErpAgentPlans";
 
 interface EC2Response {
   message: string;
@@ -34,6 +35,8 @@ interface Machine {
   startNote?: string;
   // Persistent note shown on the card.
   note?: string;
+  // Shows the "Customer plans" management section (passcode-gated).
+  hasPlans?: boolean;
 }
 
 const machines: Machine[] = [
@@ -64,6 +67,7 @@ const machines: Machine[] = [
     requiresPasscode: true,
     startNote: "Starting — the site can take ~2 minutes.",
     note: "No automatic stop. Stop it when you're done.",
+    hasPlans: true,
   },
 ];
 
@@ -352,6 +356,15 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
           <p className="mt-5 text-[11px] text-amber-400/70 leading-relaxed border-t border-white/5 pt-4">
             {machine.note}
           </p>
+        )}
+
+        {/* Customer plans — ErpAgent only, after a passcode is entered */}
+        {machine.hasPlans && machine.controlEndpoint && passcode.trim() && (
+          <ErpAgentPlans
+            endpoint={machine.controlEndpoint}
+            passcode={passcode}
+            serverOnline={uiState === "online"}
+          />
         )}
       </div>
     </motion.div>
