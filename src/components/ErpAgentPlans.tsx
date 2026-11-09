@@ -157,13 +157,7 @@ const labelCls = "block text-[10px] font-medium text-slate-400 tracking-[0.12em]
 const btnBase =
   "inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
       <label className={labelCls}>{label}</label>
@@ -184,6 +178,7 @@ const ErpAgentPlans: React.FC<{
   const [plans, setPlans] = useState<PlanRow[] | null>(null);
   const [payment, setPayment] = useState<PaymentDetails>({ upi_id: "", payee: "", contact: "" });
   const [paymentSet, setPaymentSet] = useState(false);
+  const [selectedCode, setSelectedCode] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null); // key of the in-flight write
@@ -200,9 +195,12 @@ const ErpAgentPlans: React.FC<{
     setError("");
     try {
       const data = await call<PlansResponse>({ action: "plans" });
-      setPlans(data.plans ?? []);
+      const rows = data.plans ?? [];
+      setPlans(rows);
       setPayment(data.payment ?? { upi_id: "", payee: "", contact: "" });
       setPaymentSet(Boolean(data.payment_details_set));
+      // Keep the current selection if it still exists, else select the first customer.
+      setSelectedCode((prev) => (rows.some((r) => r.code === prev) ? prev : rows[0]?.code ?? ""));
     } catch (e: any) {
       setError(e.message || "Could not load plans.");
     } finally {
@@ -255,7 +253,8 @@ const ErpAgentPlans: React.FC<{
   const isOpen = (code: string, type: PanelType) => openPanel === `${code}:${type}`;
   const anyBusy = busy !== null;
 
-  // ── Renders ────────────────────────────────────────────────────────────────
+  const selectedRow = plans?.find((p) => p.code === selectedCode) ?? null;
+
   const Spinner = (
     <div className="flex items-center gap-2 text-xs text-violet-300 mt-3">
       <Loader2 size={13} className="animate-spin" />
@@ -322,20 +321,44 @@ const ErpAgentPlans: React.FC<{
               <p className="text-xs text-slate-500">No customers found.</p>
             )}
 
-            {/* Rows */}
-            <div className="space-y-3">
-              {plans?.map((row) => {
+            {/* Customer selector */}
+            {plans && plans.length > 0 && (
+              <div className="max-w-sm">
+                <label htmlFor="erp-customer" className={labelCls}>
+                  Customer
+                </label>
+                <select
+                  id="erp-customer"
+                  className={`${fieldCls} appearance-none`}
+                  value={selectedCode}
+                  onChange={(e) => {
+                    setSelectedCode(e.target.value);
+                    setOpenPanel(null);
+                    setError("");
+                  }}
+                >
+                  {plans.map((p) => (
+                    <option key={p.code} value={p.code} className="bg-[#0f0f1a]">
+                      {p.code} — {badgeFor(p).label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Selected customer detail */}
+            {selectedRow &&
+              (() => {
+                const row = selectedRow;
                 const badge = badgeFor(row);
                 const hasPlan = Boolean(row.plan);
                 return (
-                  <div
-                    key={row.code}
-                    className="rounded-xl border border-white/10 bg-white/[0.02] p-4"
-                  >
+                  <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-white truncate">{row.code}</p>
-                        <p className="text-xs text-slate-400 mt-0.5">{planSummary(row)}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{row.site}</p>
+                        <p className="text-xs text-slate-400 mt-1">{planSummary(row)}</p>
                       </div>
                       <span
                         className={`text-[10px] font-semibold px-2 py-1 rounded-full border flex-shrink-0 ${badge.cls}`}
@@ -386,7 +409,6 @@ const ErpAgentPlans: React.FC<{
                               paid_until: row.paid_until ?? defaultBilling(),
                               remind_days: row.remind_days ?? 3,
                               note: "",
-                              _origAmount: row.amount,
                             })
                           }
                           className={`${btnBase} bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10`}
@@ -604,8 +626,7 @@ const ErpAgentPlans: React.FC<{
                     )}
                   </div>
                 );
-              })}
-            </div>
+              })()}
 
             {/* Payment details */}
             {plans && (
