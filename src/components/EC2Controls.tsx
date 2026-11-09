@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Server, Power, RefreshCw, Globe, Lock } from "lucide-react";
+import { Server, Power, RefreshCw, Globe, Lock, ExternalLink, Copy, Check } from "lucide-react";
 import { useApi } from "../hooks/useApi";
 import ErpAgentPlans from "./ErpAgentPlans";
 
@@ -37,6 +37,8 @@ interface Machine {
   note?: string;
   // Shows the "Customer plans" management section (passcode-gated).
   hasPlans?: boolean;
+  // Public site to open when the instance is running.
+  siteUrl?: string;
 }
 
 const machines: Machine[] = [
@@ -48,6 +50,7 @@ const machines: Machine[] = [
     secretKey: import.meta.env.VITE_EC2_SECRET_KEY,
     startEndpoint: import.meta.env.VITE_EC2_START_ENDPOINT,
     stopEndpoint: import.meta.env.VITE_EC2_STOP_ENDPOINT,
+    siteUrl: "https://sse.sanjaykumarp.info",
   },
   {
     name: "PMAGENT",
@@ -59,8 +62,7 @@ const machines: Machine[] = [
   },
   {
     name: "ErpAgent",
-    description:
-      "ERP demo server (ERPNext-based) — erp.buildenic.com.",
+    description: "ERP demo server (ERPNext-based) — erp.buildenic.com.",
     tags: ["ERP", "AWS EC2", "Lambda"],
     // Public Lambda Function URL (not a secret). No secretKey: auth is a passcode the user types.
     controlEndpoint: "https://twlkd2ycdmbopdtnwjg37ico6q0ycypm.lambda-url.ap-south-1.on.aws/",
@@ -68,6 +70,7 @@ const machines: Machine[] = [
     startNote: "Starting — the site can take ~2 minutes.",
     note: "No automatic stop. Stop it when you're done.",
     hasPlans: true,
+    siteUrl: "https://erp.buildenic.com",
   },
 ];
 
@@ -81,12 +84,44 @@ const statusPill: Record<UiState, { classes: string; label: string }> = {
   locked: { classes: "bg-amber-500/10 text-amber-400 border-amber-500/30", label: "🔒 Locked" },
 };
 
-const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine, index }) => {
+const dotColor: Record<UiState, string> = {
+  online: "bg-emerald-400",
+  offline: "bg-slate-500",
+  checking: "bg-cyan-400 animate-pulse",
+  auth: "bg-red-400",
+  error: "bg-red-400",
+  unconfigured: "bg-slate-600",
+  locked: "bg-amber-400",
+};
+
+const shortWord: Record<UiState, string> = {
+  online: "Live",
+  offline: "Off",
+  checking: "Checking",
+  auth: "Auth failed",
+  error: "Error",
+  unconfigured: "N/A",
+  locked: "Locked",
+};
+
+const fmtTime = (d: Date) =>
+  d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+const EC2MachineCard: React.FC<{
+  machine: Machine;
+  index: number;
+  refreshNonce: number;
+  onStatus: (name: string, state: UiState) => void;
+  className?: string;
+}> = ({ machine, index, refreshNonce, onStatus, className = "" }) => {
   const [statusDetail, setStatusDetail] = useState<string>(
     machine.requiresPasscode ? "Enter passcode to check status" : "Checking server status…"
   );
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [uiState, setUiState] = useState<UiState>(machine.requiresPasscode ? "locked" : "checking");
+  const [publicIp, setPublicIp] = useState<string | null>(null);
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
+  const [copied, setCopied] = useState(false);
   // Passcode is kept in memory only — never persisted to localStorage, sessionStorage or the URL.
   const [passcode, setPasscode] = useState<string>("");
 
@@ -105,12 +140,20 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
 
   const mountedRef = useRef<boolean>(false);
   const didCheckRef = useRef<boolean>(false);
+  const firstNonceRef = useRef<boolean>(true);
+
+  // Report state up to the overview strip.
+  useEffect(() => {
+    onStatus(machine.name, uiState);
+  }, [uiState, machine.name, onStatus]);
 
   const applyState = (data: EC2Response) => {
     const running = data.state === "running";
     setIsRunning(running);
+    setPublicIp(running ? data.public_ip ?? null : null);
+    setLastChecked(new Date());
     if (running) {
-      setStatusDetail(data.public_ip ? `Running • ${data.public_ip}` : "Running");
+      setStatusDetail("Instance is running");
       setUiState("online");
     } else {
       setStatusDetail("Instance is stopped");
@@ -140,6 +183,8 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
     } catch (e: any) {
       if (!mountedRef.current) return;
       setIsRunning(false);
+      setPublicIp(null);
+      setLastChecked(new Date());
       const isAuth = e?.message?.includes?.("Forbidden");
       setStatusDetail(isAuth ? "Authentication failed" : "Could not reach control endpoint");
       setUiState(isAuth ? "auth" : "error");
@@ -148,7 +193,6 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
 
   useEffect(() => {
     mountedRef.current = true;
-
     if (!didCheckRef.current) {
       didCheckRef.current = true;
       // Passcode machines wait for the user; everything else checks on load.
@@ -156,12 +200,23 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
         checkStatus();
       }
     }
-
     return () => {
       mountedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // "Refresh all" from the overview strip.
+  useEffect(() => {
+    if (firstNonceRef.current) {
+      firstNonceRef.current = false;
+      return;
+    }
+    if (configured && (!machine.requiresPasscode || passcode.trim())) {
+      checkStatus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshNonce]);
 
   const handleStart = async () => {
     if (isRunning) return;
@@ -172,6 +227,8 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
         ? await postStart(machine.controlEndpoint, { action: "start" }, authHeaders)
         : await postStart(machine.startEndpoint!, {}, authHeaders);
       if (!mountedRef.current) return;
+      setPublicIp(data.public_ip ?? null);
+      setLastChecked(new Date());
       if (machine.startNote) {
         setIsRunning(true);
         setUiState("online");
@@ -199,6 +256,8 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
         : await postStop(machine.stopEndpoint!, {}, authHeaders);
       if (!mountedRef.current) return;
       setIsRunning(false);
+      setPublicIp(null);
+      setLastChecked(new Date());
       setStatusDetail("Instance is stopped");
       setUiState("offline");
     } catch (e: any) {
@@ -206,6 +265,17 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
       const isAuth = e?.message?.includes?.("Forbidden");
       setStatusDetail(isAuth ? "Authentication failed" : "Stop failed — try again");
       setUiState(isAuth ? "auth" : "error");
+    }
+  };
+
+  const copyIp = async () => {
+    if (!publicIp) return;
+    try {
+      await navigator.clipboard.writeText(publicIp);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable — ignore */
     }
   };
 
@@ -218,9 +288,9 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.12 }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
       whileHover={{ y: -4 }}
-      className="glass rounded-2xl overflow-hidden gradient-border"
+      className={`glass rounded-2xl overflow-hidden gradient-border ${className}`}
     >
       <div className="p-7">
         {/* Header row */}
@@ -299,10 +369,42 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
         )}
 
         {/* Status detail */}
-        <div className="flex items-center gap-2 text-xs text-slate-500 mb-6" aria-live="polite">
-          <Globe size={12} className="flex-shrink-0" />
-          <span>{statusDetail}</span>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 mb-4" aria-live="polite">
+          <span className="flex items-center gap-2">
+            <Globe size={12} className="flex-shrink-0" />
+            {statusDetail}
+          </span>
+          {lastChecked && (
+            <span className="text-slate-600">· checked {fmtTime(lastChecked)}</span>
+          )}
         </div>
+
+        {/* Live endpoint row — only when the instance is running */}
+        {uiState === "online" && (publicIp || machine.siteUrl) && (
+          <div className="flex flex-wrap items-center gap-2 mb-6">
+            {machine.siteUrl && (
+              <a
+                href={machine.siteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+              >
+                <ExternalLink size={12} />
+                Open site
+              </a>
+            )}
+            {publicIp && (
+              <button
+                onClick={copyIp}
+                title="Copy public IP"
+                className="inline-flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors"
+              >
+                {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                {copied ? "Copied" : publicIp}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center gap-3">
@@ -372,6 +474,15 @@ const EC2MachineCard: React.FC<{ machine: Machine; index: number }> = ({ machine
 };
 
 const EC2Controls: React.FC = () => {
+  const [statuses, setStatuses] = useState<Record<string, UiState>>({});
+  const [refreshNonce, setRefreshNonce] = useState(0);
+
+  const onStatus = useCallback((name: string, state: UiState) => {
+    setStatuses((prev) => (prev[name] === state ? prev : { ...prev, [name]: state }));
+  }, []);
+
+  const runningCount = Object.values(statuses).filter((s) => s === "online").length;
+
   return (
     <div className="relative min-h-screen bg-[#08080F] overflow-hidden">
       {/* Background accents */}
@@ -379,13 +490,13 @@ const EC2Controls: React.FC = () => {
       <div className="absolute bottom-1/4 left-0 w-[400px] h-[400px] bg-cyan-700/10 rounded-full blur-[130px] pointer-events-none" />
       <div className="absolute inset-0 bg-dot-pattern opacity-30 pointer-events-none" />
 
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="mb-12"
+          className="mb-8"
         >
           <p className="text-xs font-medium text-violet-400/70 tracking-[0.25em] uppercase mb-3">
             — Infrastructure —
@@ -401,10 +512,57 @@ const EC2Controls: React.FC = () => {
           <div className="mt-4 h-px bg-gradient-to-r from-violet-500/40 via-pink-500/20 to-transparent" />
         </motion.div>
 
-        {/* Machine cards */}
+        {/* Overview strip */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="glass rounded-2xl px-4 py-3 mb-8 flex flex-wrap items-center gap-x-4 gap-y-3"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            {machines.map((m) => {
+              const st = statuses[m.name] ?? "checking";
+              return (
+                <span
+                  key={m.name}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-slate-300"
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${dotColor[st]}`} />
+                  <span className="truncate max-w-[120px]">{m.name}</span>
+                  <span className="text-slate-500">{shortWord[st]}</span>
+                </span>
+              );
+            })}
+          </div>
+          <div className="sm:ml-auto flex items-center gap-3">
+            <span
+              className={`text-xs font-medium ${
+                runningCount > 0 ? "text-emerald-400" : "text-slate-500"
+              }`}
+            >
+              {runningCount} running
+            </span>
+            <button
+              onClick={() => setRefreshNonce((n) => n + 1)}
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <RefreshCw size={12} />
+              Refresh all
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Machine cards — simple servers in a 2-col grid, the plans server full-width */}
         <div className="grid gap-6 md:grid-cols-2">
           {machines.map((machine, i) => (
-            <EC2MachineCard key={machine.name} machine={machine} index={i} />
+            <EC2MachineCard
+              key={machine.name}
+              machine={machine}
+              index={i}
+              refreshNonce={refreshNonce}
+              onStatus={onStatus}
+              className={machine.hasPlans ? "md:col-span-2" : ""}
+            />
           ))}
         </div>
 
