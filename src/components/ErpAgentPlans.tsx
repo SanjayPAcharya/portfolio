@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ChevronDown, RefreshCw, Loader2, X, Pencil } from "lucide-react";
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -174,7 +174,7 @@ const ErpAgentPlans: React.FC<{
   passcode: string;
   serverOnline: boolean;
 }> = ({ endpoint, passcode, serverOnline }) => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [plans, setPlans] = useState<PlanRow[] | null>(null);
   const [payment, setPayment] = useState<PaymentDetails>({ upi_id: "", payee: "", contact: "" });
   const [paymentSet, setPaymentSet] = useState(false);
@@ -213,6 +213,12 @@ const ErpAgentPlans: React.FC<{
     setOpen(next);
     if (next && serverOnline && plans === null && !loading) load();
   };
+
+  // Load plans once the section is open and the server is confirmed online.
+  useEffect(() => {
+    if (open && serverOnline && plans === null && !loading) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, serverOnline]);
 
   const flash = (msg: string) => {
     setToast(msg);
@@ -265,7 +271,7 @@ const ErpAgentPlans: React.FC<{
   const header = (
     <button
       onClick={toggleOpen}
-      className="w-full flex items-center justify-between gap-2 text-left mt-5 pt-4 border-t border-white/5"
+      className="w-full flex items-center justify-between gap-2 text-left border-t border-white/5 pt-4 mt-5 xl:border-t-0 xl:pt-0 xl:mt-0"
       aria-expanded={open}
     >
       <span className="text-sm font-semibold text-white">Customer plans</span>

@@ -280,180 +280,196 @@ const MachineDetail: React.FC<{
   const pill = statusPill[uiState];
   const canStart = configured && hasAuth && !loading && uiState === "offline";
   const canStop = configured && hasAuth && !loading && uiState === "online";
+  const showPlans = Boolean(machine.hasPlans && machine.controlEndpoint && passcode.trim());
 
   return (
-    <div className={`p-6 sm:p-8 ${visible ? "" : "hidden"}`}>
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-5">
-        <div className="min-w-0">
-          <span className="flex items-center gap-1.5 text-[10px] font-medium text-violet-400/70 tracking-[0.2em] uppercase mb-1.5">
-            <Server size={11} /> EC2 Instance
-          </span>
-          <h2 className="font-display font-bold text-2xl text-white leading-tight truncate">
-            {machine.name}
-          </h2>
-        </div>
-        <span
-          className={`text-[10px] font-semibold px-3 py-1 rounded-full border flex-shrink-0 ${pill.classes}`}
-        >
-          {pill.label}
-        </span>
-      </div>
+    <div className={`p-6 sm:p-8 h-full ${visible ? "" : "hidden"}`}>
+      <div
+        className={
+          showPlans ? "grid grid-cols-1 xl:grid-cols-2 gap-8 xl:gap-12 h-full" : "h-full"
+        }
+      >
+        {/* ── Left: instance + controls ── */}
+        <div className="min-w-0 flex flex-col">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-4 mb-5">
+            <div className="min-w-0">
+              <span className="flex items-center gap-1.5 text-[10px] font-medium text-violet-400/70 tracking-[0.2em] uppercase mb-1.5">
+                <Server size={11} /> EC2 Instance
+              </span>
+              <h2 className="font-display font-bold text-2xl text-white leading-tight truncate">
+                {machine.name}
+              </h2>
+            </div>
+            <span
+              className={`text-[10px] font-semibold px-3 py-1 rounded-full border flex-shrink-0 ${pill.classes}`}
+            >
+              {pill.label}
+            </span>
+          </div>
 
-      <p className="text-slate-400 text-sm leading-relaxed mb-5 max-w-2xl">{machine.description}</p>
+          <p className="text-slate-400 text-sm leading-relaxed mb-5 max-w-2xl">
+            {machine.description}
+          </p>
 
-      {/* Tags */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {machine.tags.map((tag) => (
-          <span
-            key={tag}
-            className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/10 text-slate-400"
+          {/* Tags */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            {machine.tags.map((tag) => (
+              <span
+                key={tag}
+                className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/10 text-slate-400"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          {/* Passcode field — only for passcode-protected machines. Value stays in memory only. */}
+          {machine.requiresPasscode && (
+            <div className="mb-6 max-w-md">
+              <label
+                htmlFor={`passcode-${machine.name}`}
+                className="flex items-center gap-1.5 text-[10px] font-medium text-amber-400/80 tracking-[0.15em] uppercase mb-2"
+              >
+                <Lock size={11} className="flex-shrink-0" />
+                Passcode
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  id={`passcode-${machine.name}`}
+                  type="password"
+                  value={passcode}
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="Enter passcode"
+                  onChange={(e) => setPasscode(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && passcode.trim() && !loading) checkStatus();
+                  }}
+                  className="flex-1 min-w-0 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-400/40 focus:bg-white/[0.07] transition-colors"
+                />
+                <button
+                  onClick={checkStatus}
+                  disabled={!passcode.trim() || loading}
+                  className="flex-shrink-0 rounded-lg border border-amber-400/30 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Unlock
+                </button>
+              </div>
+              <p className="mt-2 text-[10px] text-slate-600 leading-relaxed">
+                Held in memory only — never saved to the browser. You enter it here; it is sent
+                with the control request.
+              </p>
+            </div>
+          )}
+
+          {/* Status line */}
+          <div
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 mb-4"
+            aria-live="polite"
           >
-            {tag}
-          </span>
-        ))}
-      </div>
+            <span className="flex items-center gap-2">
+              <Globe size={12} className="flex-shrink-0" />
+              {statusDetail}
+            </span>
+            {lastChecked && (
+              <span className="text-slate-600">· checked {fmtTime(lastChecked)}</span>
+            )}
+          </div>
 
-      {/* Passcode field — only for passcode-protected machines. Value stays in memory only. */}
-      {machine.requiresPasscode && (
-        <div className="mb-6 max-w-md">
-          <label
-            htmlFor={`passcode-${machine.name}`}
-            className="flex items-center gap-1.5 text-[10px] font-medium text-amber-400/80 tracking-[0.15em] uppercase mb-2"
-          >
-            <Lock size={11} className="flex-shrink-0" />
-            Passcode
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              id={`passcode-${machine.name}`}
-              type="password"
-              value={passcode}
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="Enter passcode"
-              onChange={(e) => setPasscode(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && passcode.trim() && !loading) checkStatus();
-              }}
-              className="flex-1 min-w-0 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-400/40 focus:bg-white/[0.07] transition-colors"
-            />
+          {/* Live endpoint row — only when running */}
+          {uiState === "online" && (publicIp || machine.siteUrl) && (
+            <div className="flex flex-wrap items-center gap-2 mb-6">
+              {machine.siteUrl && (
+                <a
+                  href={machine.siteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+                >
+                  <ExternalLink size={12} />
+                  Open site
+                </a>
+              )}
+              {publicIp && (
+                <button
+                  onClick={copyIp}
+                  title="Copy public IP"
+                  className="inline-flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors"
+                >
+                  {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                  {copied ? "Copied" : publicIp}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleStart}
+              disabled={!canStart}
+              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+                canStart
+                  ? "text-white hover:opacity-90 hover:scale-105"
+                  : "text-slate-500 bg-white/5 border border-white/10 cursor-not-allowed"
+              }`}
+              style={
+                canStart
+                  ? {
+                      background: "linear-gradient(135deg, #10B981, #22D3EE)",
+                      boxShadow: "0 0 24px rgba(16,185,129,0.35)",
+                    }
+                  : {}
+              }
+            >
+              <Power size={13} />
+              {loadingStart ? "Starting…" : "Start"}
+            </button>
+
+            <button
+              onClick={handleStop}
+              disabled={!canStop}
+              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+                canStop
+                  ? "text-white bg-red-500/80 hover:bg-red-500 hover:scale-105 shadow-[0_0_24px_rgba(239,68,68,0.3)]"
+                  : "text-slate-500 bg-white/5 border border-white/10 cursor-not-allowed"
+              }`}
+            >
+              <Power size={13} />
+              {loadingStop ? "Stopping…" : "Stop"}
+            </button>
+
             <button
               onClick={checkStatus}
-              disabled={!passcode.trim() || loading}
-              className="flex-shrink-0 rounded-lg border border-amber-400/30 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={!configured || loading || (machine.requiresPasscode && !passcode.trim())}
+              title="Refresh status"
+              aria-label={`Refresh ${machine.name} status`}
+              className="ml-auto inline-flex items-center justify-center w-9 h-9 rounded-full border border-white/10 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Unlock
+              <RefreshCw size={13} className={loadingCheck ? "animate-spin" : ""} />
             </button>
           </div>
-          <p className="mt-2 text-[10px] text-slate-600 leading-relaxed">
-            Held in memory only — never saved to the browser. You enter it here; it is sent with the
-            control request.
-          </p>
-        </div>
-      )}
 
-      {/* Status line */}
-      <div
-        className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 mb-4"
-        aria-live="polite"
-      >
-        <span className="flex items-center gap-2">
-          <Globe size={12} className="flex-shrink-0" />
-          {statusDetail}
-        </span>
-        {lastChecked && <span className="text-slate-600">· checked {fmtTime(lastChecked)}</span>}
-      </div>
-
-      {/* Live endpoint row — only when running */}
-      {uiState === "online" && (publicIp || machine.siteUrl) && (
-        <div className="flex flex-wrap items-center gap-2 mb-6">
-          {machine.siteUrl && (
-            <a
-              href={machine.siteUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition-colors"
-            >
-              <ExternalLink size={12} />
-              Open site
-            </a>
-          )}
-          {publicIp && (
-            <button
-              onClick={copyIp}
-              title="Copy public IP"
-              className="inline-flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-colors"
-            >
-              {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-              {copied ? "Copied" : publicIp}
-            </button>
+          {/* Persistent note */}
+          {machine.note && (
+            <p className="mt-5 text-[11px] text-amber-400/70 leading-relaxed border-t border-white/5 pt-4">
+              {machine.note}
+            </p>
           )}
         </div>
-      )}
 
-      {/* Actions */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={handleStart}
-          disabled={!canStart}
-          className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
-            canStart
-              ? "text-white hover:opacity-90 hover:scale-105"
-              : "text-slate-500 bg-white/5 border border-white/10 cursor-not-allowed"
-          }`}
-          style={
-            canStart
-              ? {
-                  background: "linear-gradient(135deg, #10B981, #22D3EE)",
-                  boxShadow: "0 0 24px rgba(16,185,129,0.35)",
-                }
-              : {}
-          }
-        >
-          <Power size={13} />
-          {loadingStart ? "Starting…" : "Start"}
-        </button>
-
-        <button
-          onClick={handleStop}
-          disabled={!canStop}
-          className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 ${
-            canStop
-              ? "text-white bg-red-500/80 hover:bg-red-500 hover:scale-105 shadow-[0_0_24px_rgba(239,68,68,0.3)]"
-              : "text-slate-500 bg-white/5 border border-white/10 cursor-not-allowed"
-          }`}
-        >
-          <Power size={13} />
-          {loadingStop ? "Stopping…" : "Stop"}
-        </button>
-
-        <button
-          onClick={checkStatus}
-          disabled={!configured || loading || (machine.requiresPasscode && !passcode.trim())}
-          title="Refresh status"
-          aria-label={`Refresh ${machine.name} status`}
-          className="ml-auto inline-flex items-center justify-center w-9 h-9 rounded-full border border-white/10 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <RefreshCw size={13} className={loadingCheck ? "animate-spin" : ""} />
-        </button>
+        {/* ── Right: Customer plans (ErpAgent only, after a passcode is entered) ── */}
+        {showPlans && (
+          <div className="min-w-0 xl:border-l xl:border-white/[0.07] xl:pl-10">
+            <ErpAgentPlans
+              endpoint={machine.controlEndpoint!}
+              passcode={passcode}
+              serverOnline={uiState === "online"}
+            />
+          </div>
+        )}
       </div>
-
-      {/* Persistent note */}
-      {machine.note && (
-        <p className="mt-5 text-[11px] text-amber-400/70 leading-relaxed border-t border-white/5 pt-4">
-          {machine.note}
-        </p>
-      )}
-
-      {/* Customer plans — ErpAgent only, after a passcode is entered */}
-      {machine.hasPlans && machine.controlEndpoint && passcode.trim() && (
-        <ErpAgentPlans
-          endpoint={machine.controlEndpoint}
-          passcode={passcode}
-          serverOnline={uiState === "online"}
-        />
-      )}
     </div>
   );
 };
@@ -476,7 +492,7 @@ const EC2Controls: React.FC = () => {
       <div className="absolute bottom-1/4 left-0 w-[400px] h-[400px] bg-cyan-700/10 rounded-full blur-[130px] pointer-events-none" />
       <div className="absolute inset-0 bg-dot-pattern opacity-30 pointer-events-none" />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+      <div className="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-10 sm:py-14">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -556,7 +572,7 @@ const EC2Controls: React.FC = () => {
           </aside>
 
           {/* Right: detail + controls (all kept mounted to preserve state) */}
-          <section className="flex-1 min-w-0 lg:min-h-[460px]">
+          <section className="flex-1 min-w-0 lg:min-h-[620px]">
             {machines.map((machine) => (
               <MachineDetail
                 key={machine.name}
